@@ -1,0 +1,29 @@
+# Copyright 2019 Changkun Ou. All rights reserved.
+# Use of this source code is governed by a MIT
+# license that can be found in the LICENSE file.
+
+version: '3'
+services:
+  xvnc:
+    image: consol/ubuntu-xfce-vnc:1.4.0
+    container_name: xvnc
+    networks:
+      bring_network:
+        ipv4_address: 10.0.0.11
+  guacd:
+    image: guacamole/guacd:latest
+    restart: always
+    networks:
+      bring_network:
+        ipv4_address: 10.0.0.10
+    cap_add:
+      - SYS_PTRACE
+    ports:
+      - "4822:4822"
+networks:
+  bring_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.0.0/24
