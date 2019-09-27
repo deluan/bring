@@ -36,6 +36,34 @@ func copyImage(dest draw.Image, x, y int, src image.Image, sr image.Rectangle, o
 	draw.Draw(dest, r, src, sr.Min, op)
 }
 
+func (l *Layer) Copy(srcLayer *Layer, srcx, srcy, srcw, srch, x, y int, op draw.Op) {
+	srcImg := srcLayer.image
+	srcDim := srcImg.Bounds()
+
+	// If entire rectangle outside source canvas, stop
+	if srcx >= srcDim.Dx() || srcy >= srcDim.Dy() {
+		return
+	}
+
+	// Otherwise, clip rectangle to area
+	if srcx+srcw > srcDim.Dx() {
+		srcw = srcDim.Dx() - srcx
+	}
+
+	if srcy+srch > srcDim.Dy() {
+		srch = srcDim.Dy() - srcy
+	}
+
+	// Stop if nothing to draw.
+	if srcw == 0 || srch == 0 {
+		return
+	}
+
+	//if (layer.autosize) fitRect(x, y, srcw, srch);
+
+	copyImage(l.image, x, y, srcImg, srcDim, op)
+}
+
 func (l *Layer) Draw(x, y int, src image.Image) {
 	l.updateModifiedRect(image.Rect(x, y, x+src.Bounds().Max.X, y+src.Bounds().Max.Y))
 	copyImage(l.image, x, y, src, src.Bounds(), l.op)

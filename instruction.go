@@ -89,7 +89,7 @@ func (i *Instruction) String() string {
 
 	b.WriteString(strconv.Itoa(len(i.opcode)))
 	b.WriteString(".")
-	b.WriteString(string(i.opcode))
+	b.WriteString(i.opcode)
 
 	for _, a := range i.args {
 		b.WriteString(",")

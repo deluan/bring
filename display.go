@@ -108,6 +108,17 @@ func (d *Display) dispose(layerIdx int) {
 	})
 }
 
+func (d *Display) copy(srcL, srcX, srcY, srcWidth, srcHeight,
+	dstL, dstX, dstY int, compositeOperation byte) {
+	srcLayer := d.layers.get(srcL)
+	dstLayer := d.layers.get(dstL)
+	op := compositeOperations[compositeOperation]
+	d.scheduleTask("copy", func() error {
+		dstLayer.Copy(srcLayer, srcX, srcY, srcWidth, srcHeight, dstX, dstY, op)
+		return nil
+	})
+}
+
 func (d *Display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
 	op := compositeOperations[compositeOperation]
 	layer := d.layers.get(layerIdx)

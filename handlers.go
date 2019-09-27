@@ -13,6 +13,21 @@ var handlers = map[string]Handler{
 		return c.streams.append(idx, args[1])
 	},
 
+	"copy": func(c *Client, args []string) error {
+		srcL := parseInt(args[0])
+		srcX := parseInt(args[1])
+		srcY := parseInt(args[2])
+		srcWidth := parseInt(args[3])
+		srcHeight := parseInt(args[4])
+		mask := parseInt(args[5])
+		dstL := parseInt(args[6])
+		dstX := parseInt(args[7])
+		dstY := parseInt(args[8])
+		c.display.copy(srcL, srcX, srcY, srcWidth, srcHeight,
+			dstL, dstX, dstY, byte(mask))
+		return nil
+	},
+
 	"cursor": func(c *Client, args []string) error {
 		cursorHotspotX := parseInt(args[0])
 		cursorHotspotY := parseInt(args[1])
