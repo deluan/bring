@@ -1,4 +1,4 @@
-package gocamole
+package bring
 
 import (
 	"errors"

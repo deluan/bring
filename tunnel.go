@@ -1,4 +1,4 @@
-package gocamole
+package bring
 
 import (
 	"net"
@@ -48,7 +48,7 @@ type InetSocketTunnel struct {
 	writeMutex sync.Mutex
 }
 
-func NewInetSocketTunnel(address  string) (*InetSocketTunnel, error) {
+func NewInetSocketTunnel(address string) (*InetSocketTunnel, error) {
 	t := &InetSocketTunnel{address: address}
 
 	return t, nil

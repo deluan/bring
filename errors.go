@@ -1,7 +1,7 @@
-package gocamole
+package bring
 
 import "errors"
 
 var (
-	ErrNotConnected   = errors.New("not connected")
+	ErrNotConnected = errors.New("not connected")
 )

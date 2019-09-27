@@ -1,4 +1,4 @@
-package gocamole
+package bring
 
 type Client struct {
 	session *Session
