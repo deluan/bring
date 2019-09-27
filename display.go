@@ -6,7 +6,6 @@ import (
 	"image/draw"
 	"sync"
 
-	"github.com/fogleman/gg"
 	"github.com/google/uuid"
 )
 
@@ -26,7 +25,6 @@ type Display struct {
 	pendingTasks   sync.WaitGroup
 	layers         layers
 	canvas         *image.RGBA
-	XXX1, XXX2     int
 }
 
 func newDisplay(logger Logger) *Display {
@@ -83,10 +81,6 @@ func (d *Display) processTasks() {
 			mr := defaultLayer.modifiedRect
 			copyImage(d.canvas, mr.Min.X, mr.Min.Y, defaultLayer.image, mr, draw.Src)
 
-			d.XXX1++
-			name := fmt.Sprintf("%d-%v", d.XXX1, defaultLayer.modifiedRect)
-			_ = gg.SavePNG(name+"-canvas.png", d.canvas)
-
 			defaultLayer.resetModified()
 			d.pendingTasks.Done()
 		}
@@ -132,9 +126,6 @@ func (d *Display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
 		layer.Draw(x, y, img)
 		return nil
 	})
-	//d.XXX2++
-	//name := fmt.Sprintf("X%d-(%d,%d)-(%d,%d).png", d.XXX2, x, y, img.Bounds().Dx(), img.Bounds().Dy())
-	//_ = gg.SavePNG(name, img)
 }
 
 func (d *Display) resize(layerIdx, w, h int) {

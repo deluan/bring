@@ -1,5 +1,7 @@
 package bring
 
+import "image"
+
 type Client struct {
 	session *Session
 	display *Display
@@ -38,4 +40,8 @@ func (c *Client) Start() {
 			c.logger.Errorf("Not implemented: %s", ins.opcode)
 		}
 	}
+}
+
+func (c *Client) Canvas() image.Image {
+	return c.display.canvas
 }
