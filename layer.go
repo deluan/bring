@@ -62,11 +62,12 @@ func (l *Layer) Copy(srcLayer *Layer, srcx, srcy, srcw, srch, x, y int, op draw.
 	//if (layer.autosize) fitRect(x, y, srcw, srch);
 
 	copyImage(l.image, x, y, srcImg, srcDim, op)
+	l.updateModifiedRect(image.Rect(x, y, x+srcDim.Max.X, y+srcDim.Max.Y))
 }
 
 func (l *Layer) Draw(x, y int, src image.Image) {
-	l.updateModifiedRect(image.Rect(x, y, x+src.Bounds().Max.X, y+src.Bounds().Max.Y))
 	copyImage(l.image, x, y, src, src.Bounds(), l.op)
+	l.updateModifiedRect(image.Rect(x, y, x+src.Bounds().Max.X, y+src.Bounds().Max.Y))
 }
 
 func (l *Layer) Resize(w int, h int) {

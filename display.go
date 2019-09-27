@@ -85,9 +85,9 @@ func (d *Display) processTasks() {
 
 			d.XXX1++
 			name := fmt.Sprintf("%d-%v", d.XXX1, defaultLayer.modifiedRect)
-			defaultLayer.resetModified()
 			_ = gg.SavePNG(name+"-canvas.png", d.canvas)
 
+			defaultLayer.resetModified()
 			d.pendingTasks.Done()
 		}
 	}
@@ -150,14 +150,16 @@ func (d *Display) resize(layerIdx, w, h int) {
 }
 
 func (d *Display) setCursor(cursorHotspotX, cursorHotspotY, srcL, srcX, srcY, srcWidth, srcHeight int) {
-	//layer := d.layers.get(srcL)
+	layer := d.layers.get(srcL)
 	d.scheduleTask("setCursor", func() error {
 		d.cursorHotspotX = cursorHotspotX
 		d.cursorHotspotY = cursorHotspotY
 		d.cursor.Resize(srcWidth, srcHeight)
-		// TODO
-		//d.cursor.Copy(layer, srcx, srcy, srcw, srch, 0, 0)
+		d.cursor.Copy(layer, srcX, srcY, srcWidth, srcHeight, 0, 0, draw.Src)
+		// TODO (?)
 		//d.moveCursor(d.cursorX, d.cursorY)
+		defaultLayer := d.layers.getDefault()
+		defaultLayer.Copy(d.cursor, 0, 0, srcWidth, srcHeight, cursorHotspotX, cursorHotspotY, draw.Over)
 		return nil
 	})
 }
