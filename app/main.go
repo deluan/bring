@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/deluan/bring"
 	"github.com/faiface/pixel"
@@ -12,13 +15,18 @@ import (
 	"golang.org/x/image/colornames"
 )
 
+const (
+	mainWidth  = 1024
+	mainHeight = 768
+)
+
 func initBring(protocol, hostname, port string, logger bring.Logger) *bring.Client {
 	session, err := bring.NewSession("localhost:4822", protocol, map[string]string{
 		"hostname": hostname,
 		"port":     port,
 		"password": "vncpassword",
-		"width":    "1024",
-		"height":   "768",
+		"width":    strconv.Itoa(mainWidth),
+		"height":   strconv.Itoa(mainHeight),
 	}, logger)
 	if err != nil {
 		panic(err)
@@ -35,7 +43,7 @@ func initBring(protocol, hostname, port string, logger bring.Logger) *bring.Clie
 func run() {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Bring it on!",
-		Bounds: pixel.R(0, 0, 1024, 768),
+		Bounds: pixel.R(0, 0, mainWidth, mainHeight),
 		VSync:  true,
 	}
 	win, err := pixelgl.NewWindow(cfg)
@@ -54,6 +62,8 @@ func run() {
 	mat = mat.Moved(win.Bounds().Center())
 	//mat = mat.Scaled(win.Bounds().Center(), 900/1024)
 
+	frames := 0
+	second := time.Tick(time.Second)
 	for !win.Closed() {
 		img := client.Canvas()
 		if img.Bounds().Dx() > 0 {
@@ -62,6 +72,13 @@ func run() {
 			sprite.Draw(win, mat)
 		}
 		win.Update()
+		frames++
+		select {
+		case <-second:
+			win.SetTitle(fmt.Sprintf("%s | FPS: %d", cfg.Title, frames))
+			frames = 0
+		default:
+		}
 	}
 }
 
