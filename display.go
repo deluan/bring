@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/draw"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -25,6 +26,7 @@ type Display struct {
 	pendingTasks   sync.WaitGroup
 	layers         layers
 	canvas         *image.RGBA
+	lastUpdate     int64
 }
 
 func newDisplay(logger Logger) *Display {
@@ -80,6 +82,7 @@ func (d *Display) processTasks() {
 			}
 			mr := defaultLayer.modifiedRect
 			copyImage(d.canvas, mr.Min.X, mr.Min.Y, defaultLayer.image, mr, draw.Src)
+			d.lastUpdate = time.Now().UnixNano()
 
 			defaultLayer.resetModified()
 			d.pendingTasks.Done()

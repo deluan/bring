@@ -42,6 +42,11 @@ func (c *Client) Start() {
 	}
 }
 
-func (c *Client) Canvas() image.Image {
-	return c.display.canvas
+func (c *Client) LastUpdate() int64 {
+	return c.display.lastUpdate
+}
+
+func (c *Client) Canvas() (image.Image, int64) {
+	// TODO May have synchronization issues?
+	return c.display.canvas, c.display.lastUpdate
 }

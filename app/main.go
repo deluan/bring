@@ -64,12 +64,16 @@ func run() {
 
 	frames := 0
 	second := time.Tick(time.Second)
+	var lastRefresh int64
 	for !win.Closed() {
-		img := client.Canvas()
-		if img.Bounds().Dx() > 0 {
-			pic := pixel.PictureDataFromImage(img)
-			sprite := pixel.NewSprite(pic, pic.Bounds())
-			sprite.Draw(win, mat)
+		img, lastUpdate := client.Canvas()
+		if lastRefresh != lastUpdate {
+			if img.Bounds().Dx() > 0 && img.Bounds().Dy() > 0 {
+				pic := pixel.PictureDataFromImage(img)
+				sprite := pixel.NewSprite(pic, pic.Bounds())
+				sprite.Draw(win, mat)
+			}
+			lastRefresh = lastUpdate
 		}
 		win.Update()
 		frames++
