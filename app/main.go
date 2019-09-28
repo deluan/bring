@@ -20,7 +20,11 @@ const (
 	mainHeight = 768
 )
 
-func initBring(protocol, hostname, port string, logger bring.Logger) *bring.Client {
+func initBring(protocol, hostname, port string) *bring.Client {
+	logger := logrus.New()
+	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
+	logger.SetLevel(logrus.DebugLevel)
+
 	session, err := bring.NewSession("localhost:4822", protocol, map[string]string{
 		"hostname": hostname,
 		"port":     port,
@@ -50,11 +54,7 @@ func run() {
 	if err != nil {
 		panic(err)
 	}
-	logger := logrus.New()
-	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
-	logger.SetLevel(logrus.DebugLevel)
-
-	client := initBring(os.Args[1], os.Args[2], os.Args[3], logger)
+	client := initBring(os.Args[1], os.Args[2], os.Args[3])
 
 	win.Clear(colornames.Skyblue)
 
