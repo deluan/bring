@@ -27,6 +27,7 @@ type Display struct {
 	layers         layers
 	canvas         *image.RGBA
 	lastUpdate     int64
+	canvasAccess   sync.RWMutex
 }
 
 func newDisplay(logger Logger) *Display {
@@ -64,28 +65,34 @@ func (d *Display) scheduleTask(name string, t taskFunc) {
 	d.tasks <- task
 }
 
+func (d *Display) processSingleTask(t task) {
+	d.canvasAccess.Lock()
+	d.logger.Tracef("Executing task %s", t.String())
+	defer func() {
+		d.pendingTasks.Done()
+		d.canvasAccess.Unlock()
+	}()
+	err := t.taskFunc()
+	if err != nil {
+		d.logger.Errorf("Skipping task %s due to error. This can lead to invalid screen state! Error: %s", t.String(), err)
+		return
+	}
+	defaultLayer := d.layers.getDefault()
+	if !defaultLayer.modified {
+		return
+	}
+	mr := defaultLayer.modifiedRect
+	copyImage(d.canvas, mr.Min.X, mr.Min.Y, defaultLayer.image, mr, draw.Src)
+	d.lastUpdate = time.Now().UnixNano()
+
+	defaultLayer.resetModified()
+}
+
 func (d *Display) processTasks() {
 	for {
 		select {
 		case t := <-d.tasks:
-			d.logger.Tracef("Executing task %s", t.String())
-			err := t.taskFunc()
-			if err != nil {
-				d.logger.Errorf("Skipping task %s due to error. This can lead to invalid screen state! Error: %s", t.String(), err)
-				d.pendingTasks.Done()
-				continue
-			}
-			defaultLayer := d.layers.getDefault()
-			if !defaultLayer.modified {
-				d.pendingTasks.Done()
-				continue
-			}
-			mr := defaultLayer.modifiedRect
-			copyImage(d.canvas, mr.Min.X, mr.Min.Y, defaultLayer.image, mr, draw.Src)
-			d.lastUpdate = time.Now().UnixNano()
-
-			defaultLayer.resetModified()
-			d.pendingTasks.Done()
+			d.processSingleTask(t)
 		}
 	}
 }
@@ -96,6 +103,14 @@ func (d *Display) flush() error {
 	d.pendingTasks.Wait()
 	d.logger.Tracef("All tasks completed [%s]", id.String())
 	return nil
+}
+
+func (d *Display) Canvas() (image.Image, int64) {
+	d.canvasAccess.RLock()
+	defer func() {
+		d.canvasAccess.RUnlock()
+	}()
+	return d.canvas, d.lastUpdate
 }
 
 func (d *Display) dispose(layerIdx int) {

@@ -47,6 +47,5 @@ func (c *Client) LastUpdate() int64 {
 }
 
 func (c *Client) Canvas() (image.Image, int64) {
-	// TODO May have synchronization issues?
-	return c.display.canvas, c.display.lastUpdate
+	return c.display.Canvas()
 }
