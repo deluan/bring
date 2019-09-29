@@ -4,7 +4,8 @@ import (
 	"image"
 	"image/draw"
 
-	"github.com/llgcode/draw2d/draw2dimg"
+	"github.com/tfriedel6/canvas"
+	"github.com/tfriedel6/canvas/backend/softwarebackend"
 )
 
 type Layer struct {
@@ -13,10 +14,12 @@ type Layer struct {
 	height       int
 	op           draw.Op
 	image        *image.RGBA
-	gc           draw2dimg.GraphicContext
+	gc           *canvas.Canvas
 	visible      bool
 	modified     bool
 	modifiedRect image.Rectangle
+	pathOpen     bool
+	pathRect     image.Rectangle
 }
 
 func (l *Layer) updateModifiedRect(modArea image.Rectangle) {
@@ -28,6 +31,12 @@ func (l *Layer) updateModifiedRect(modArea image.Rectangle) {
 func (l *Layer) resetModified() {
 	l.modifiedRect = image.Rectangle{}
 	l.modified = false
+}
+
+func (l *Layer) setupCanvas() {
+	be := softwarebackend.New(l.width, l.height)
+	be.Image = l.image
+	l.gc = canvas.New(be)
 }
 
 func copyImage(dest draw.Image, x, y int, src image.Image, sr image.Rectangle, op draw.Op) {
@@ -80,30 +89,62 @@ func (l *Layer) Resize(w int, h int) {
 	l.image = newImage
 	l.width = w
 	l.height = h
+	l.setupCanvas()
 	l.updateModifiedRect(original.Union(l.image.Bounds()))
+}
+
+func (l *Layer) appendToPath(rect image.Rectangle) {
+	if !l.pathOpen {
+		l.gc.BeginPath()
+		l.pathOpen = true
+		l.pathRect = image.Rectangle{}
+	}
+	l.pathRect = l.pathRect.Union(rect)
+}
+
+func (l *Layer) endPath() {
+	l.updateModifiedRect(l.pathRect)
+	l.pathOpen = false
+	l.pathRect = image.Rectangle{}
+}
+
+func (l *Layer) Rect(x int, y int, width int, height int) {
+	l.appendToPath(image.Rect(x, y, x+width-1, y+height-1))
+	l.gc.Rect(float64(x), float64(y), float64(width), float64(height))
+}
+
+func (l *Layer) Fill(r byte, g byte, b byte, a byte, op draw.Op) {
+	// Ignores op, as the canvas library does not support it :/
+	l.gc.SetFillStyle(r, g, b, a)
+	l.gc.Fill()
+	l.endPath()
 }
 
 type layers map[int]*Layer
 
 func newLayers() layers {
 	ls := make(layers)
-	ls[0] = &Layer{image: image.NewRGBA(image.Rect(0, 0, 0, 0))}
+	ls[0] = newLayer()
+	ls[0].visible = true
 	return ls
 }
 
-func newLayer(l0 *Layer, visible bool) *Layer {
-	var l *Layer
-	// If it is an invisible layer (aka buffer)
-	if visible {
-		l = &Layer{
-			width:  l0.width,
-			height: l0.height,
-			image:  image.NewRGBA(image.Rect(0, 0, l0.width, l0.height)),
-		}
-	} else {
-		l = &Layer{image: image.NewRGBA(image.Rect(0, 0, 0, 0))}
+func newLayer() *Layer {
+	l := &Layer{
+		image: image.NewRGBA(image.Rect(0, 0, 0, 0)),
 	}
-	l.visible = visible
+	l.setupCanvas()
+	return l
+}
+
+func newVisibleLayer(l0 *Layer) *Layer {
+	l := &Layer{
+		width:   l0.width,
+		height:  l0.height,
+		image:   image.NewRGBA(image.Rect(0, 0, l0.width, l0.height)),
+		visible: true,
+	}
+	l.setupCanvas()
 	return l
 }
 
@@ -115,9 +156,12 @@ func (ls layers) get(id int) *Layer {
 	if l, ok := ls[id]; ok {
 		return l
 	}
-	l := newLayer(ls.getDefault(), id > 0)
-	ls[id] = l
-	return l
+	if id > 0 {
+		ls[id] = newVisibleLayer(ls[0])
+	} else {
+		ls[id] = newLayer()
+	}
+	return ls[id]
 }
 
 func (ls layers) delete(id int) {

@@ -25,6 +25,7 @@ type Display struct {
 	tasks          chan task
 	pendingTasks   sync.WaitGroup
 	layers         layers
+	defaultLayer   *Layer
 	canvas         *image.RGBA
 	lastUpdate     int64
 	canvasAccess   sync.RWMutex
@@ -33,11 +34,12 @@ type Display struct {
 func newDisplay(logger Logger) *Display {
 	d := &Display{
 		logger: logger,
-		cursor: &Layer{image: image.NewRGBA(image.Rect(0, 0, 0, 0))},
+		cursor: newLayer(),
 		layers: newLayers(),
 		canvas: image.NewRGBA(image.Rectangle{}),
 		tasks:  make(chan task, 10),
 	}
+	d.defaultLayer = d.layers.getDefault()
 	go d.processTasks()
 	return d
 }
@@ -77,15 +79,14 @@ func (d *Display) processSingleTask(t task) {
 		d.logger.Errorf("Skipping task %s due to error. This can lead to invalid screen state! Error: %s", t.String(), err)
 		return
 	}
-	defaultLayer := d.layers.getDefault()
-	if !defaultLayer.modified {
+	if !d.defaultLayer.modified {
 		return
 	}
-	mr := defaultLayer.modifiedRect
-	copyImage(d.canvas, mr.Min.X, mr.Min.Y, defaultLayer.image, mr, draw.Src)
+	mr := d.defaultLayer.modifiedRect
+	copyImage(d.canvas, mr.Min.X, mr.Min.Y, d.defaultLayer.image, mr, draw.Src)
 	d.lastUpdate = time.Now().UnixNano()
 
-	defaultLayer.resetModified()
+	d.defaultLayer.resetModified()
 }
 
 func (d *Display) processTasks() {
@@ -122,10 +123,10 @@ func (d *Display) dispose(layerIdx int) {
 
 func (d *Display) copy(srcL, srcX, srcY, srcWidth, srcHeight,
 	dstL, dstX, dstY int, compositeOperation byte) {
-	srcLayer := d.layers.get(srcL)
-	dstLayer := d.layers.get(dstL)
 	op := compositeOperations[compositeOperation]
 	d.scheduleTask("copy", func() error {
+		srcLayer := d.layers.get(srcL)
+		dstLayer := d.layers.get(dstL)
 		dstLayer.Copy(srcLayer, srcX, srcY, srcWidth, srcHeight, dstX, dstY, op)
 		return nil
 	})
@@ -133,10 +134,10 @@ func (d *Display) copy(srcL, srcX, srcY, srcWidth, srcHeight,
 
 func (d *Display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
 	op := compositeOperations[compositeOperation]
-	layer := d.layers.get(layerIdx)
 	img, err := s.image()
 
 	d.scheduleTask("draw", func() error {
+		layer := d.layers.get(layerIdx)
 		if err != nil {
 			return err
 		}
@@ -146,9 +147,25 @@ func (d *Display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
 	})
 }
 
+func (d *Display) fill(layerIdx int, r, g, b, a, compositeOperation byte) {
+	op := compositeOperations[compositeOperation]
+	d.scheduleTask("fill", func() error {
+		layer := d.layers.get(layerIdx)
+		layer.Fill(r, g, b, a, op)
+		return nil
+	})
+}
+func (d *Display) rect(layerIdx int, x int, y int, width int, height int) {
+	d.scheduleTask("rect", func() error {
+		layer := d.layers.get(layerIdx)
+		layer.Rect(x, y, width, height)
+		return nil
+	})
+}
+
 func (d *Display) resize(layerIdx, w, h int) {
-	layer := d.layers.get(layerIdx)
 	d.scheduleTask("resize", func() error {
+		layer := d.layers.get(layerIdx)
 		layer.Resize(w, h)
 		if layerIdx == 0 {
 			d.canvas = image.NewRGBA(layer.image.Bounds())
@@ -159,16 +176,15 @@ func (d *Display) resize(layerIdx, w, h int) {
 }
 
 func (d *Display) setCursor(cursorHotspotX, cursorHotspotY, srcL, srcX, srcY, srcWidth, srcHeight int) {
-	layer := d.layers.get(srcL)
 	d.scheduleTask("setCursor", func() error {
+		layer := d.layers.get(srcL)
 		d.cursorHotspotX = cursorHotspotX
 		d.cursorHotspotY = cursorHotspotY
 		d.cursor.Resize(srcWidth, srcHeight)
 		d.cursor.Copy(layer, srcX, srcY, srcWidth, srcHeight, 0, 0, draw.Src)
 		// TODO (?)
 		//d.moveCursor(d.cursorX, d.cursorY)
-		defaultLayer := d.layers.getDefault()
-		defaultLayer.Copy(d.cursor, 0, 0, srcWidth, srcHeight, cursorHotspotX, cursorHotspotY, draw.Over)
+		d.defaultLayer.Copy(d.cursor, 0, 0, srcWidth, srcHeight, cursorHotspotX, cursorHotspotY, draw.Over)
 		return nil
 	})
 }

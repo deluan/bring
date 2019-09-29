@@ -28,6 +28,17 @@ var handlers = map[string]Handler{
 		return nil
 	},
 
+	"cfill": func(c *Client, args []string) error {
+		mask := parseInt(args[0])
+		layerIdx := parseInt(args[1])
+		r := parseInt(args[2])
+		g := parseInt(args[3])
+		b := parseInt(args[4])
+		a := parseInt(args[5])
+		c.display.fill(layerIdx, byte(r), byte(g), byte(b), byte(a), byte(mask))
+		return nil
+	},
+
 	"cursor": func(c *Client, args []string) error {
 		cursorHotspotX := parseInt(args[0])
 		cursorHotspotY := parseInt(args[1])
@@ -74,6 +85,16 @@ var handlers = map[string]Handler{
 		s.onEnd = func(s *stream) {
 			c.display.draw(layerIdx, x, y, op, s)
 		}
+		return nil
+	},
+
+	"rect": func(c *Client, args []string) error {
+		layerIdx := parseInt(args[0])
+		x := parseInt(args[1])
+		y := parseInt(args[2])
+		w := parseInt(args[3])
+		h := parseInt(args[4])
+		c.display.rect(layerIdx, x, y, w, h)
 		return nil
 	},
 
