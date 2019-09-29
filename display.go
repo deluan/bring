@@ -137,12 +137,11 @@ func (d *Display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
 	img, err := s.image()
 
 	d.scheduleTask("draw", func() error {
-		layer := d.layers.get(layerIdx)
 		if err != nil {
 			return err
 		}
-		layer.op = op
-		layer.Draw(x, y, img)
+		layer := d.layers.get(layerIdx)
+		layer.Draw(x, y, img, op)
 		return nil
 	})
 }

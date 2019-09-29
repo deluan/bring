@@ -12,7 +12,6 @@ type Layer struct {
 	x, y         int
 	width        int
 	height       int
-	op           draw.Op
 	image        *image.RGBA
 	gc           *canvas.Canvas
 	visible      bool
@@ -41,8 +40,8 @@ func (l *Layer) setupCanvas() {
 
 func copyImage(dest draw.Image, x, y int, src image.Image, sr image.Rectangle, op draw.Op) {
 	dp := image.Pt(x, y)
-	r := image.Rectangle{Min: dp, Max: dp.Add(sr.Size())}
-	draw.Draw(dest, r, src, sr.Min, op)
+	dr := image.Rectangle{Min: dp, Max: dp.Add(sr.Size())}
+	draw.Draw(dest, dr, src, sr.Min, op)
 }
 
 func (l *Layer) Copy(srcLayer *Layer, srcx, srcy, srcw, srch, x, y int, op draw.Op) {
@@ -74,8 +73,8 @@ func (l *Layer) Copy(srcLayer *Layer, srcx, srcy, srcw, srch, x, y int, op draw.
 	l.updateModifiedRect(image.Rect(x, y, x+srcDim.Max.X, y+srcDim.Max.Y))
 }
 
-func (l *Layer) Draw(x, y int, src image.Image) {
-	copyImage(l.image, x, y, src, src.Bounds(), l.op)
+func (l *Layer) Draw(x, y int, src image.Image, op draw.Op) {
+	copyImage(l.image, x, y, src, src.Bounds(), op)
 	l.updateModifiedRect(image.Rect(x, y, x+src.Bounds().Max.X, y+src.Bounds().Max.Y))
 }
 
@@ -85,7 +84,7 @@ func (l *Layer) Resize(w int, h int) {
 		return
 	}
 	newImage := image.NewRGBA(image.Rect(0, 0, w, h))
-	draw.Draw(newImage, l.image.Bounds(), l.image, image.Pt(0, 0), l.op)
+	draw.Draw(newImage, l.image.Bounds(), l.image, image.Pt(0, 0), draw.Src)
 	l.image = newImage
 	l.width = w
 	l.height = h
@@ -109,7 +108,7 @@ func (l *Layer) endPath() {
 }
 
 func (l *Layer) Rect(x int, y int, width int, height int) {
-	l.appendToPath(image.Rect(x, y, x+width-1, y+height-1))
+	l.appendToPath(image.Rect(x, y, x+width, y+height))
 	l.gc.Rect(float64(x), float64(y), float64(width), float64(height))
 }
 
