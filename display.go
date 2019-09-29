@@ -34,7 +34,7 @@ type Display struct {
 func newDisplay(logger Logger) *Display {
 	d := &Display{
 		logger: logger,
-		cursor: newLayer(),
+		cursor: newBuffer(),
 		layers: newLayers(),
 		canvas: image.NewRGBA(image.Rectangle{}),
 		tasks:  make(chan task, 10),
@@ -82,6 +82,7 @@ func (d *Display) processSingleTask(t task) {
 	if !d.defaultLayer.modified {
 		return
 	}
+	// TODO Only update canvas when flush
 	mr := d.defaultLayer.modifiedRect
 	copyImage(d.canvas, mr.Min.X, mr.Min.Y, d.defaultLayer.image, mr, draw.Src)
 	d.lastUpdate = time.Now().UnixNano()
@@ -121,8 +122,7 @@ func (d *Display) dispose(layerIdx int) {
 	})
 }
 
-func (d *Display) copy(srcL, srcX, srcY, srcWidth, srcHeight,
-	dstL, dstX, dstY int, compositeOperation byte) {
+func (d *Display) copy(srcL, srcX, srcY, srcWidth, srcHeight, dstL, dstX, dstY int, compositeOperation byte) {
 	op := compositeOperations[compositeOperation]
 	d.scheduleTask("copy", func() error {
 		srcLayer := d.layers.get(srcL)

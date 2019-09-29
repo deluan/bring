@@ -9,7 +9,6 @@ import (
 )
 
 type Layer struct {
-	x, y         int
 	width        int
 	height       int
 	image        *image.RGBA
@@ -19,6 +18,7 @@ type Layer struct {
 	modifiedRect image.Rectangle
 	pathOpen     bool
 	pathRect     image.Rectangle
+	autosize     bool
 }
 
 func (l *Layer) updateModifiedRect(modArea image.Rectangle) {
@@ -38,6 +38,31 @@ func (l *Layer) setupCanvas() {
 	l.gc = canvas.New(be)
 }
 
+func (l *Layer) fitRect(x int, y int, w int, h int) {
+	// Calculate bounds
+	opBoundX := w + x
+	opBoundY := h + y
+
+	// Determine max width
+	var resizeWidth int
+	if opBoundX > l.width {
+		resizeWidth = opBoundX
+	} else {
+		resizeWidth = l.width
+	}
+
+	// Determine max height
+	var resizeHeight int
+	if opBoundY > l.height {
+		resizeHeight = opBoundY
+	} else {
+		resizeHeight = l.height
+	}
+
+	// Resize if necessary
+	l.Resize(resizeWidth, resizeHeight)
+}
+
 func copyImage(dest draw.Image, x, y int, src image.Image, sr image.Rectangle, op draw.Op) {
 	dp := image.Pt(x, y)
 	dr := image.Rectangle{Min: dp, Max: dp.Add(sr.Size())}
@@ -49,17 +74,17 @@ func (l *Layer) Copy(srcLayer *Layer, srcx, srcy, srcw, srch, x, y int, op draw.
 	srcDim := srcImg.Bounds()
 
 	// If entire rectangle outside source canvas, stop
-	if srcx >= srcDim.Dx() || srcy >= srcDim.Dy() {
+	if srcx >= srcDim.Max.X || srcy >= srcDim.Max.Y {
 		return
 	}
 
 	// Otherwise, clip rectangle to area
-	if srcx+srcw > srcDim.Dx() {
-		srcw = srcDim.Dx() - srcx
+	if srcx+srcw > srcDim.Max.X {
+		srcw = srcDim.Max.X - srcx
 	}
 
-	if srcy+srch > srcDim.Dy() {
-		srch = srcDim.Dy() - srcy
+	if srcy+srch > srcDim.Max.Y {
+		srch = srcDim.Max.Y - srcy
 	}
 
 	// Stop if nothing to draw.
@@ -67,15 +92,22 @@ func (l *Layer) Copy(srcLayer *Layer, srcx, srcy, srcw, srch, x, y int, op draw.
 		return
 	}
 
-	//if (layer.autosize) fitRect(x, y, srcw, srch);
+	if l.autosize {
+		l.fitRect(x, y, srcw, srch)
+	}
 
-	copyImage(l.image, x, y, srcImg, srcDim, op)
-	l.updateModifiedRect(image.Rect(x, y, x+srcDim.Max.X, y+srcDim.Max.Y))
+	srcCopyDim := image.Rect(srcx, srcy, srcx+srcw, srcy+srch)
+	copyImage(l.image, x, y, srcImg, srcCopyDim, op)
+	l.updateModifiedRect(image.Rect(x, y, x+srcw, y+srch))
 }
 
 func (l *Layer) Draw(x, y int, src image.Image, op draw.Op) {
-	copyImage(l.image, x, y, src, src.Bounds(), op)
-	l.updateModifiedRect(image.Rect(x, y, x+src.Bounds().Max.X, y+src.Bounds().Max.Y))
+	srcDim := src.Bounds()
+	if l.autosize {
+		l.fitRect(x, y, srcDim.Max.X, srcDim.Max.Y)
+	}
+	copyImage(l.image, x, y, src, srcDim, op)
+	l.updateModifiedRect(image.Rect(x, y, x+srcDim.Max.X, y+srcDim.Max.Y))
 }
 
 func (l *Layer) Resize(w int, h int) {
@@ -123,14 +155,15 @@ type layers map[int]*Layer
 
 func newLayers() layers {
 	ls := make(layers)
-	ls[0] = newLayer()
+	ls[0] = newBuffer()
 	ls[0].visible = true
 	return ls
 }
 
-func newLayer() *Layer {
+func newBuffer() *Layer {
 	l := &Layer{
-		image: image.NewRGBA(image.Rect(0, 0, 0, 0)),
+		image:    image.NewRGBA(image.Rect(0, 0, 0, 0)),
+		autosize: true,
 	}
 	l.setupCanvas()
 	return l
@@ -158,7 +191,7 @@ func (ls layers) get(id int) *Layer {
 	if id > 0 {
 		ls[id] = newVisibleLayer(ls[0])
 	} else {
-		ls[id] = newLayer()
+		ls[id] = newBuffer()
 	}
 	return ls[id]
 }
