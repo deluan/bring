@@ -1,6 +1,9 @@
 package bring
 
-import "image"
+import (
+	"image"
+	"strconv"
+)
 
 type Client struct {
 	session *Session
@@ -8,6 +11,14 @@ type Client struct {
 	streams streams
 	logger  Logger
 }
+
+const (
+	MouseLeft = 1 << iota
+	MouseMiddle
+	MouseRight
+	MouseUp
+	MouseDown
+)
 
 func NewClient(session *Session, logger ...Logger) (*Client, error) {
 	var log Logger
@@ -48,4 +59,15 @@ func (c *Client) LastUpdate() int64 {
 
 func (c *Client) Canvas() (image.Image, int64) {
 	return c.display.Canvas()
+}
+
+func (c *Client) MoveMouse(p image.Point, pressedButtons ...int) {
+	buttonMask := 0
+	for _, b := range pressedButtons {
+		buttonMask |= b
+	}
+	err := c.session.Send(NewInstruction("mouse", strconv.Itoa(p.X), strconv.Itoa(p.Y), strconv.Itoa(buttonMask)))
+	if err != nil {
+		c.logger.Errorf("could not send mouse position: %s", err)
+	}
 }

@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -23,7 +25,7 @@ const (
 func initBring(protocol, hostname, port string) *bring.Client {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
-	logger.SetLevel(logrus.DebugLevel)
+	logger.SetLevel(logrus.InfoLevel)
 
 	session, err := bring.NewSession("localhost:4822", protocol, map[string]string{
 		"hostname": hostname,
@@ -65,7 +67,12 @@ func run() {
 	frames := 0
 	second := time.Tick(time.Second)
 	var lastRefresh int64
+
+	var mousePos pixel.Vec
+	var mouseBtns []int
+
 	for !win.Closed() {
+		// Process screen updates
 		img, lastUpdate := client.Canvas()
 		if lastRefresh != lastUpdate {
 			if img.Bounds().Dx() > 0 && img.Bounds().Dy() > 0 {
@@ -76,6 +83,18 @@ func run() {
 			lastRefresh = lastUpdate
 		}
 		win.Update()
+
+		// Handle mouse events
+		newMousePos := win.MousePosition()
+		newMouseBtns := mouseButtons(win)
+		if mouseInWindow(win) && (mousePos != newMousePos || !reflect.DeepEqual(mouseBtns, newMouseBtns) || changeInMouseButtons(win)) {
+			y := mainHeight - mousePos.Y // OpenGL uses inverted Y
+			client.MoveMouse(image.Pt(int(mousePos.X), int(y)), newMouseBtns...)
+			mousePos = newMousePos
+			mouseBtns = newMouseBtns
+		}
+
+		// Measure FPS
 		frames++
 		select {
 		case <-second:
@@ -84,6 +103,40 @@ func run() {
 		default:
 		}
 	}
+}
+
+func changeInMouseButtons(win *pixelgl.Window) bool {
+	btns := []pixelgl.Button{
+		pixelgl.MouseButtonLeft,
+		pixelgl.MouseButtonRight,
+		pixelgl.MouseButtonMiddle,
+	}
+	for _, p := range btns {
+		if win.JustPressed(p) || win.JustReleased(p) {
+			return true
+		}
+	}
+	return false
+}
+
+func mouseButtons(win *pixelgl.Window) []int {
+	btnMap := map[pixelgl.Button]int{
+		pixelgl.MouseButtonLeft:   bring.MouseLeft,
+		pixelgl.MouseButtonRight:  bring.MouseRight,
+		pixelgl.MouseButtonMiddle: bring.MouseMiddle,
+	}
+	var btns []int
+	for p, b := range btnMap {
+		if win.Pressed(p) {
+			btns = append(btns, b)
+		}
+	}
+	return btns
+}
+
+func mouseInWindow(win *pixelgl.Window) bool {
+	p := win.MousePosition()
+	return win.Bounds().Contains(p)
 }
 
 func main() {
