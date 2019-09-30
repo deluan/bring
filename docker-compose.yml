@@ -1,6 +1,5 @@
-# Copyright 2019 Changkun Ou. All rights reserved.
-# Use of this source code is governed by a MIT
-# license that can be found in the LICENSE file.
+# This file is used for local testing. It spins up a guacd server 
+# and a linux with a VNC server.
 
 version: '3'
 services:
@@ -14,14 +13,11 @@ services:
       - "5901:5901"
   guacd:
     image: glyptodon/guacd:latest
-    restart: always
     environment:
       ACCEPT_EULA: Y
     networks:
       bring_network:
         ipv4_address: 10.0.0.10
-    cap_add:
-      - SYS_PTRACE
     ports:
       - "4822:4822"
 networks:
