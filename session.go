@@ -8,7 +8,7 @@ import (
 type SessionState int
 
 const (
-	SessionClosed = iota
+	SessionClosed SessionState = iota
 	SessionHandshake
 	SessionActive
 )

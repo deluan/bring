@@ -29,6 +29,10 @@ func NewClient(session *Session, logger ...Logger) (*Client, error) {
 	return c, nil
 }
 
+func (c *Client) State() SessionState {
+	return c.session.State
+}
+
 func (c *Client) Start() {
 	for {
 		select {

@@ -22,6 +22,12 @@ const (
 	mainHeight = 768
 )
 
+var stateNames = map[bring.SessionState]string{
+	bring.SessionActive:    "Active",
+	bring.SessionClosed:    "Closed",
+	bring.SessionHandshake: "Handshake",
+}
+
 func initBring(protocol, hostname, port string) *bring.Client {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
@@ -87,7 +93,8 @@ func run() {
 		// Handle mouse events
 		newMousePos := win.MousePosition()
 		newMouseBtns := mouseButtons(win)
-		if mouseInWindow(win) && (mousePos != newMousePos || !reflect.DeepEqual(mouseBtns, newMouseBtns) || changeInMouseButtons(win)) {
+		if mouseInWindow(win) &&
+			(mousePos != newMousePos || !reflect.DeepEqual(mouseBtns, newMouseBtns) || changeInMouseButtons(win)) {
 			y := mainHeight - mousePos.Y // OpenGL uses inverted Y
 			client.MoveMouse(image.Pt(int(mousePos.X), int(y)), newMouseBtns...)
 			mousePos = newMousePos
@@ -107,7 +114,7 @@ func run() {
 		frames++
 		select {
 		case <-second:
-			win.SetTitle(fmt.Sprintf("%s | FPS: %d", cfg.Title, frames))
+			win.SetTitle(fmt.Sprintf("%s | %s | FPS: %d", cfg.Title, stateNames[client.State()], frames))
 			frames = 0
 		default:
 		}
