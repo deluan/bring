@@ -13,8 +13,10 @@ services:
     ports:
       - "5901:5901"
   guacd:
-    image: guacamole/guacd:latest
+    image: glyptodon/guacd:latest
     restart: always
+    environment:
+      ACCEPT_EULA: Y
     networks:
       bring_network:
         ipv4_address: 10.0.0.10
