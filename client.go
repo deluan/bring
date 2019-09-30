@@ -45,11 +45,7 @@ func (c *Client) Start() {
 	}
 }
 
-func (c *Client) LastUpdate() int64 {
-	return c.display.lastUpdate
-}
-
-func (c *Client) Canvas() (image.Image, int64) {
+func (c *Client) Canvas() (image image.Image, lastUpdate int64) {
 	return c.display.Canvas()
 }
 
