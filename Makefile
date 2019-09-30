@@ -1,9 +1,9 @@
 
 run:
-	cd app; go run . rdp `ipconfig getifaddr en0` 3389
-
-offline:
 	cd app; go run . vnc 10.0.0.11 5901
+
+rdp:
+	cd app; go run . rdp `ipconfig getifaddr en0` 3389
 
 qemu:
 	cd app; go run . vnc `ipconfig getifaddr en0` 5900

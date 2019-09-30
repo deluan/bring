@@ -21,6 +21,13 @@ func TestClient(t *testing.T) {
 		}
 		c, _ := NewClient(s, &DiscardLogger{})
 
+		Convey("It exposes the session state", func() {
+			s.State = SessionHandshake
+			So(c.State(), ShouldEqual, SessionHandshake)
+			s.State = SessionClosed
+			So(c.State(), ShouldEqual, SessionClosed)
+		})
+
 		Convey("When it receives a mouse position", func() {
 			c.MoveMouse(image.Pt(10, 20))
 
