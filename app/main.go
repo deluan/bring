@@ -22,6 +22,18 @@ const (
 	mainHeight = 768
 )
 
+var (
+	keys map[pixelgl.Button]bring.KeyCode
+)
+
+func initKeys() {
+	keys = map[pixelgl.Button]bring.KeyCode{
+		pixelgl.KeyBackspace: bring.KeyBackspace,
+		pixelgl.KeyEnter:     bring.KeyEnter,
+		pixelgl.KeyUp:        bring.KeyUp,
+	}
+}
+
 func initBring(protocol, hostname, port string) *bring.Client {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
@@ -94,6 +106,18 @@ func run() {
 			mouseBtns = newMouseBtns
 		}
 
+		typed := win.Typed()
+		if typed != "" {
+			client.SendText(typed)
+		}
+		pressed, released := collectKeys(win)
+		for _, k := range pressed {
+			client.SendKey(k, true)
+		}
+		for _, k := range released {
+			client.SendKey(k, false)
+		}
+
 		// Measure FPS
 		frames++
 		select {
@@ -103,6 +127,18 @@ func run() {
 		default:
 		}
 	}
+}
+
+func collectKeys(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring.KeyCode) {
+	for k, v := range keys {
+		if win.JustPressed(k) {
+			pressed = append(pressed, v)
+		}
+		if win.JustReleased(k) {
+			released = append(released, v)
+		}
+	}
+	return
 }
 
 func changeInMouseButtons(win *pixelgl.Window) bool {
@@ -144,6 +180,6 @@ func main() {
 		println("Usage: app <vnc|rdp> address port")
 		return
 	}
-
+	initKeys()
 	pixelgl.Run(run)
 }
