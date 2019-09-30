@@ -3,3 +3,4 @@
 output-*
 *.png
 qemu
+reports

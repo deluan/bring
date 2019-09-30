@@ -18,6 +18,13 @@ test:
 bench:
 	go test -bench=. -run=XXX ./...
 
+coverage:
+	mkdir -p reports
+	go test -coverprofile=reports/coverage.out 
+	go tool cover -func=reports/coverage.out
+	go tool cover -html=reports/coverage.out -o reports/index.html
+	open reports/index.html
+
 doc:
 	@echo "Doc server address: http://localhost:6060"
 	godoc -http=":6060" -goroot=$$GOPATH
