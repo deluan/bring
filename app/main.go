@@ -22,22 +22,10 @@ const (
 	mainHeight = 768
 )
 
-var (
-	keys map[pixelgl.Button]bring.KeyCode
-)
-
-func initKeys() {
-	keys = map[pixelgl.Button]bring.KeyCode{
-		pixelgl.KeyBackspace: bring.KeyBackspace,
-		pixelgl.KeyEnter:     bring.KeyEnter,
-		pixelgl.KeyUp:        bring.KeyUp,
-	}
-}
-
 func initBring(protocol, hostname, port string) *bring.Client {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
-	logger.SetLevel(logrus.InfoLevel)
+	logger.SetLevel(logrus.DebugLevel)
 
 	session, err := bring.NewSession("localhost:4822", protocol, map[string]string{
 		"hostname": hostname,
@@ -106,10 +94,7 @@ func run() {
 			mouseBtns = newMouseBtns
 		}
 
-		typed := win.Typed()
-		if typed != "" {
-			client.SendText(typed)
-		}
+		// Handle keyboard events
 		pressed, released := collectKeys(win)
 		for _, k := range pressed {
 			client.SendKey(k, true)
@@ -129,13 +114,38 @@ func run() {
 	}
 }
 
+// Rant: why pixelgl keyboard events handling is so messy?!?
 func collectKeys(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring.KeyCode) {
 	for k, v := range keys {
+		key := v
 		if win.JustPressed(k) {
-			pressed = append(pressed, v)
+			pressed = append(pressed, key)
 		}
 		if win.JustReleased(k) {
-			released = append(released, v)
+			released = append(released, key)
+		}
+	}
+	controlPressed := win.Pressed(pixelgl.KeyLeftControl) || win.Pressed(pixelgl.KeyRightControl) ||
+		win.Pressed(pixelgl.KeyLeftAlt) || win.Pressed(pixelgl.KeyRightAlt)
+	if controlPressed {
+		shiftPressed := win.Pressed(pixelgl.KeyLeftShift) || win.Pressed(pixelgl.KeyRightShift)
+		for ch := 32; ch < 127; ch++ {
+			isLetter := ch >= int('A') && ch <= int('Z')
+			key := ch
+			if isLetter && !shiftPressed {
+				key = ch + 32
+			}
+			if win.JustPressed(pixelgl.Button(ch)) {
+				pressed = append(pressed, bring.KeyCode{key})
+			}
+			if win.JustReleased(pixelgl.Button(ch)) {
+				released = append(released, bring.KeyCode{key})
+			}
+		}
+	} else {
+		for _, ch := range win.Typed() {
+			pressed = append(pressed, bring.KeyCode{int(ch)})
+			released = append(released, bring.KeyCode{int(ch)})
 		}
 	}
 	return
