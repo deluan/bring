@@ -174,16 +174,41 @@ func (d *Display) resize(layerIdx, w, h int) {
 	})
 }
 
+func (d *Display) hideCursor() {
+	cr := image.Rect(d.cursorX, d.cursorY, d.cursorX+d.cursor.width, d.cursorY+d.cursor.height)
+	copyImage(d.canvas, d.cursorX, d.cursorY, d.defaultLayer.image, cr, draw.Src)
+	d.defaultLayer.modified = true
+}
+
+func (d *Display) moveCursor(x, y int) {
+	d.scheduleTask("moveCursor", func() error {
+		d.hideCursor()
+
+		d.cursorX = x
+		d.cursorY = y
+
+		copyImage(d.canvas, d.cursorX, d.cursorY, d.cursor.image, d.cursor.image.Bounds(), draw.Over)
+		d.defaultLayer.modified = true
+		return nil
+	})
+}
+
 func (d *Display) setCursor(cursorHotspotX, cursorHotspotY, srcL, srcX, srcY, srcWidth, srcHeight int) {
 	d.scheduleTask("setCursor", func() error {
+		d.hideCursor()
+
 		layer := d.layers.get(srcL)
-		d.cursorHotspotX = cursorHotspotX
-		d.cursorHotspotY = cursorHotspotY
 		d.cursor.Resize(srcWidth, srcHeight)
 		d.cursor.Copy(layer, srcX, srcY, srcWidth, srcHeight, 0, 0, draw.Src)
-		// TODO (?)
-		//d.moveCursor(d.cursorX, d.cursorY)
-		d.defaultLayer.Copy(d.cursor, 0, 0, srcWidth, srcHeight, cursorHotspotX, cursorHotspotY, draw.Over)
+		d.cursorHotspotX = cursorHotspotX
+		d.cursorHotspotY = cursorHotspotY
+
+		// TODO Calculate correct position
+		d.cursorX = cursorHotspotX
+		d.cursorY = cursorHotspotY
+
+		copyImage(d.canvas, d.cursorX, d.cursorY, d.cursor.image, d.cursor.image.Bounds(), draw.Over)
+		d.defaultLayer.modified = true
 		return nil
 	})
 }

@@ -54,10 +54,15 @@ func (c *Client) Canvas() (image.Image, int64) {
 }
 
 func (c *Client) MoveMouse(p image.Point, pressedButtons ...int) {
+	if c.session.State != SessionActive {
+		return
+	}
+
 	buttonMask := 0
 	for _, b := range pressedButtons {
 		buttonMask |= b
 	}
+	c.display.moveCursor(p.X, p.Y)
 	err := c.session.Send(NewInstruction("mouse", strconv.Itoa(p.X), strconv.Itoa(p.Y), strconv.Itoa(buttonMask)))
 	if err != nil {
 		c.logger.Errorf("could not send mouse position: %s", err)
@@ -65,6 +70,10 @@ func (c *Client) MoveMouse(p image.Point, pressedButtons ...int) {
 }
 
 func (c *Client) SendText(s string) {
+	if c.session.State != SessionActive {
+		return
+	}
+
 	for _, ch := range s {
 		keycode := strconv.Itoa(int(ch))
 		c.session.Send(NewInstruction("key", keycode, "1"))
@@ -73,6 +82,10 @@ func (c *Client) SendText(s string) {
 }
 
 func (c *Client) SendKey(key KeyCode, pressed bool) {
+	if c.session.State != SessionActive {
+		return
+	}
+
 	var p string = "0"
 	if pressed {
 		p = "1"
