@@ -1,6 +1,7 @@
 package bring
 
 import (
+	"strings"
 	"time"
 )
 
@@ -55,6 +56,7 @@ func NewSession(addr string, protocol string, config map[string]string, logger .
 		protocol: protocol,
 	}
 
+	s.logger.Infof("Initiating %s session with %s", strings.ToUpper(protocol), addr)
 	err = s.Send(NewInstruction("select", protocol))
 	if err != nil {
 		s.logger.Errorf("Failed sending 'select': %s", err)
@@ -123,7 +125,7 @@ func (s *Session) startReader() {
 				continue
 			}
 			if s.State == SessionHandshake {
-				s.logger.Infof("Initialing handshake: %s", ins)
+				s.logger.Infof("Handshake started at %s", time.Now().Format(time.RFC3339))
 				s.handShake(ins)
 				continue
 			}
@@ -157,7 +159,7 @@ func (s *Session) handShake(argsIns *Instruction) {
 
 	err = s.Send(NewInstruction("connect", connectValues...))
 	if err != nil {
-		s.logger.Errorf("Failed handshake sending 'connect': %s", err)
+		s.logger.Errorf("Failed handshake when sending 'connect': %s", err)
 		s.Terminate()
 	}
 }
