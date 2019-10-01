@@ -50,7 +50,7 @@ func (c *Client) Start() {
 }
 
 func (c *Client) Canvas() (image image.Image, lastUpdate int64) {
-	return c.display.Canvas()
+	return c.display.getCanvas()
 }
 
 func (c *Client) MoveMouse(p image.Point, pressedButtons ...int) {

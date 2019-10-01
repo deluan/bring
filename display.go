@@ -107,7 +107,7 @@ func (d *Display) flush() error {
 	return nil
 }
 
-func (d *Display) Canvas() (image.Image, int64) {
+func (d *Display) getCanvas() (image.Image, int64) {
 	d.canvasAccess.RLock()
 	defer func() {
 		d.canvasAccess.RUnlock()
