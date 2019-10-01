@@ -1,14 +1,13 @@
 package bring
 
 import (
-	"fmt"
 	"strconv"
 )
 
 // Handler func for  Guacamole instructions
 type Handler = func(client *Client, args []string) error
 
-// Handlers for all instruction opcodes receivable by a Guacamole protocol client.
+// Handlers for all instruction opcodes receivable by this Guacamole client.
 var handlers = map[string]Handler{
 	"blob": func(c *Client, args []string) error {
 		idx := parseInt(args[0])
@@ -81,7 +80,7 @@ var handlers = map[string]Handler{
 		s := c.streams.get(parseInt(args[0]))
 		op := byte(parseInt(args[1]))
 		layerIdx := parseInt(args[2])
-		//mimetype := args[3]
+		//mimetype := args[3] // Not used
 		x := parseInt(args[4])
 		y := parseInt(args[5])
 		s.onEnd = func(s *stream) {
@@ -109,17 +108,12 @@ var handlers = map[string]Handler{
 	},
 
 	"sync": func(c *Client, args []string) error {
-		if len(c.display.tasks) > 0 {
-			c.logger.Debugf("Sync received. Flushing %d tasks", len(c.display.tasks))
-		} else {
-			c.logger.Tracef("Sync received. Flushing %d tasks", len(c.display.tasks))
-		}
 		err := c.display.flush()
 		if err != nil {
 			c.logger.Errorf("Error flushing tasks: %s", err)
 		}
 		if err := c.session.Send(NewInstruction("sync", args...)); err != nil {
-			c.logger.Errorf("Failed send 'sync' to server: %s", err)
+			c.logger.Errorf("Failed send 'sync' back to server: %s", err)
 			return err
 		}
 		return nil
@@ -127,9 +121,6 @@ var handlers = map[string]Handler{
 }
 
 func parseInt(s string) int {
-	n, err := strconv.Atoi(s)
-	if err != nil {
-		fmt.Printf("Error converting '%s' to int: %s\n", s, err)
-	}
+	n, _ := strconv.Atoi(s)
 	return n
 }
