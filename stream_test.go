@@ -1,6 +1,9 @@
 package bring
 
 import (
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -43,6 +46,16 @@ func TestStreams(t *testing.T) {
 				})
 			})
 
+			Convey("When I add a base64 stream to it", func() {
+				ss.append(2, "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAPAgMAAABYcU1qAAAACVBMVEX8/Pzc3Nzr6+uSJe5dAAAAEUlEQVQImWNgAAIHhgYGrAAAEd4AwbcvDeEAAAAASUVORK5CYII=")
+
+				Convey("It returns the image when image() is called", func() {
+					img, err := s.image()
+					So(err, ShouldBeNil)
+					So(img.Bounds(), ShouldResemble, image.Rect(0, 0, 1, 15))
+				})
+			})
+
 			Convey("When I call delete on it", func() {
 				beforeSize := len(ss)
 				ss.delete(2)
@@ -52,6 +65,7 @@ func TestStreams(t *testing.T) {
 					So(len(ss), ShouldEqual, beforeSize-1)
 				})
 			})
+
 		})
 	})
 }
