@@ -39,28 +39,9 @@ func (l *Layer) setupCanvas() {
 }
 
 func (l *Layer) fitRect(x int, y int, w int, h int) {
-	// Calculate bounds
-	opBoundX := w + x
-	opBoundY := h + y
-
-	// Determine max width
-	var resizeWidth int
-	if opBoundX > l.width {
-		resizeWidth = opBoundX
-	} else {
-		resizeWidth = l.width
-	}
-
-	// Determine max height
-	var resizeHeight int
-	if opBoundY > l.height {
-		resizeHeight = opBoundY
-	} else {
-		resizeHeight = l.height
-	}
-
-	// Resize if necessary
-	l.Resize(resizeWidth, resizeHeight)
+	rect := image.Rect(x, y, x+w, y+h)
+	final := l.image.Bounds().Union(rect)
+	l.Resize(final.Max.X, final.Max.Y)
 }
 
 func copyImage(dest draw.Image, x, y int, src image.Image, sr image.Rectangle, op draw.Op) {

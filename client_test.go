@@ -79,6 +79,18 @@ func TestClient(t *testing.T) {
 				So(t.sent[3], ShouldResemble, NewInstruction("key", to_i("r"), "0"))
 			})
 		})
+
+		Convey("When it is disconnected", func() {
+			s.State = SessionClosed
+
+			Convey("It does not send anything", func() {
+				c.SendKey(KeyEnter, true)
+				c.SendText("abc")
+				c.MoveMouse(image.Pt(0, 0), MouseRight)
+
+				So(t.sent, ShouldBeEmpty)
+			})
+		})
 	})
 }
 
