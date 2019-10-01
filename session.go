@@ -113,7 +113,11 @@ func (s *Session) startReader() {
 				s.Terminate()
 				break
 			}
-			s.logger.Debugf("S> %s", ins)
+			if ins.opcode == "blob" {
+				s.logger.Tracef("S> %s", ins)
+			} else {
+				s.logger.Debugf("S> %s", ins)
+			}
 			if ins.opcode == "nop" {
 				continue
 			}
