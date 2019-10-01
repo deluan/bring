@@ -6,6 +6,8 @@ services:
   xvnc:
     image: consol/ubuntu-xfce-vnc:1.4.0
     container_name: xvnc
+    environment:
+      VNC_RESOLUTION: "1024x768"
     networks:
       bring_network:
         ipv4_address: 10.0.0.11

@@ -1,7 +1,9 @@
 package bring
 
+type MouseButton int
+
 const (
-	MouseLeft = 1 << iota
+	MouseLeft MouseButton = 1 << iota
 	MouseMiddle
 	MouseRight
 	MouseUp

@@ -5,8 +5,10 @@ import (
 	"strconv"
 )
 
+// Handler func for  Guacamole instructions
 type Handler = func(client *Client, args []string) error
 
+// Handlers for all instruction opcodes receivable by a Guacamole protocol client.
 var handlers = map[string]Handler{
 	"blob": func(c *Client, args []string) error {
 		idx := parseInt(args[0])

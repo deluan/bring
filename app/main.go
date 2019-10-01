@@ -75,7 +75,7 @@ func run() {
 	var lastRefresh int64
 
 	var mousePos pixel.Vec
-	var mouseBtns []int
+	var mouseBtns []bring.MouseButton
 
 	for !win.Closed() {
 		// Process screen updates
@@ -172,13 +172,13 @@ func changeInMouseButtons(win *pixelgl.Window) bool {
 	return false
 }
 
-func mouseButtons(win *pixelgl.Window) []int {
-	btnMap := map[pixelgl.Button]int{
+func mouseButtons(win *pixelgl.Window) []bring.MouseButton {
+	btnMap := map[pixelgl.Button]bring.MouseButton{
 		pixelgl.MouseButtonLeft:   bring.MouseLeft,
 		pixelgl.MouseButtonRight:  bring.MouseRight,
 		pixelgl.MouseButtonMiddle: bring.MouseMiddle,
 	}
-	var btns []int
+	var btns []bring.MouseButton
 	for p, b := range btnMap {
 		if win.Pressed(p) {
 			btns = append(btns, b)
