@@ -12,6 +12,6 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337
 	github.com/stretchr/testify v1.3.0 // indirect
-	github.com/tfriedel6/canvas v0.9.0
+	github.com/tfriedel6/canvas v0.9.1
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f
 )
