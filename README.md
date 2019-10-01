@@ -1,5 +1,7 @@
 # Bring
-[![Build Status](https://github.com/deluan/bring/workflows/CI/badge.svg)](https://github.com/deluan/bring/actions) 
+[![Build Status](https://github.com/deluan/bring/workflows/CI/badge.svg)](https://github.com/deluan/bring/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/deluan/bring)](https://goreportcard.com/report/github.com/deluan/bring)
+[![Documentation](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat)](https://godoc.org/github.com/deluan/bring) 
 
 Go Client for [Apache Guacamole](http://guacamole.apache.org) Protocol.
 
@@ -12,7 +14,7 @@ My use case was to automate some tasks in a VirtualBox VM, but there was no func
 
 ## Documentation
 
-The API is provided by the [Client](client.go) struct. The documentation is a work in progress, but the API is very simple and you can take a look at all features available in the [sample app](app) provided. Here are the steps to run the app:
+The API is provided by the [Client](client.go) struct. The [documentation](https://godoc.org/github.com/deluan/bring) is a work in progress, but the API is very simple and you can take a look at all features available in the [sample app](app) provided. Here are the steps to run the app:
 
 1) You'll need a working `guacd` server in your machine. The easiest way is using docker and docker-compose. Just call `docker-compose up -d` in the root of this project. It starts the `guacd` server and a sample headless linux with a VNC server
 
