@@ -125,7 +125,7 @@ func run() {
 func collectKeys(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring.KeyCode) {
 	for k, v := range keys {
 		key := v
-		if win.JustPressed(k) {
+		if win.JustPressed(k) || win.Repeated(k) {
 			pressed = append(pressed, key)
 		}
 		if win.JustReleased(k) {
@@ -142,7 +142,7 @@ func collectKeys(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring
 			if isLetter && !shiftPressed {
 				key = ch + 32
 			}
-			if win.JustPressed(pixelgl.Button(ch)) {
+			if win.JustPressed(pixelgl.Button(ch)) || win.Repeated(pixelgl.Button(ch)) {
 				pressed = append(pressed, bring.KeyCode{key})
 			}
 			if win.JustReleased(pixelgl.Button(ch)) {
