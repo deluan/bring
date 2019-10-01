@@ -3,17 +3,6 @@
 
 version: '3'
 services:
-  xvnc:
-    image: consol/ubuntu-xfce-vnc:1.4.0
-    container_name: xvnc
-    environment:
-      VNC_RESOLUTION: "1024x768"
-    networks:
-      bring_network:
-        ipv4_address: 10.0.0.11
-    ports:
-      - "5901:5901"
-      - "6901:6901"
   guacd:
     image: glyptodon/guacd:latest
     environment:
@@ -23,6 +12,16 @@ services:
         ipv4_address: 10.0.0.10
     ports:
       - "4822:4822"
+  xvnc:
+    image: consol/ubuntu-xfce-vnc:1.4.0
+    environment:
+      VNC_RESOLUTION: "1024x768"
+    networks:
+      bring_network:
+        ipv4_address: 10.0.0.11
+    ports:
+      - "5901:5901"
+      - "6901:6901"
 networks:
   bring_network:
     driver: bridge
