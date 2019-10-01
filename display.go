@@ -177,20 +177,18 @@ func (d *Display) resize(layerIdx, w, h int) {
 func (d *Display) hideCursor() {
 	cr := image.Rect(d.cursorX, d.cursorY, d.cursorX+d.cursor.width, d.cursorY+d.cursor.height)
 	copyImage(d.canvas, d.cursorX, d.cursorY, d.defaultLayer.image, cr, draw.Src)
-	d.defaultLayer.modified = true
 }
 
 func (d *Display) moveCursor(x, y int) {
-	d.scheduleTask("moveCursor", func() error {
-		d.hideCursor()
+	d.canvasAccess.Lock()
+	defer d.canvasAccess.Unlock()
+	d.hideCursor()
 
-		d.cursorX = x
-		d.cursorY = y
+	d.cursorX = x
+	d.cursorY = y
 
-		copyImage(d.canvas, d.cursorX, d.cursorY, d.cursor.image, d.cursor.image.Bounds(), draw.Over)
-		d.defaultLayer.modified = true
-		return nil
-	})
+	copyImage(d.canvas, d.cursorX, d.cursorY, d.cursor.image, d.cursor.image.Bounds(), draw.Over)
+	d.lastUpdate = time.Now().UnixNano()
 }
 
 func (d *Display) setCursor(cursorHotspotX, cursorHotspotY, srcL, srcX, srcY, srcWidth, srcHeight int) {
@@ -203,12 +201,11 @@ func (d *Display) setCursor(cursorHotspotX, cursorHotspotY, srcL, srcX, srcY, sr
 		d.cursorHotspotX = cursorHotspotX
 		d.cursorHotspotY = cursorHotspotY
 
-		// TODO Calculate correct position
-		d.cursorX = cursorHotspotX
-		d.cursorY = cursorHotspotY
+		// TODO Calculate correct position based on cursorHotspot
+		//d.cursorX = cursorHotspotX
+		//d.cursorY = cursorHotspotY
 
 		copyImage(d.canvas, d.cursorX, d.cursorY, d.cursor.image, d.cursor.image.Bounds(), draw.Over)
-		d.defaultLayer.modified = true
 		return nil
 	})
 }

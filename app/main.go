@@ -65,6 +65,7 @@ func run() {
 	client := initBring(os.Args[1], os.Args[2], os.Args[3])
 
 	win.Clear(colornames.Skyblue)
+	win.SetCursorVisible(false)
 
 	mat := pixel.IM
 	mat = mat.Moved(win.Bounds().Center())
@@ -93,7 +94,7 @@ func run() {
 		// Handle mouse events
 		newMousePos := win.MousePosition()
 		newMouseBtns := mouseButtons(win)
-		if mouseInWindow(win) &&
+		if mouseInWindow(win, newMousePos) &&
 			(mousePos != newMousePos || !reflect.DeepEqual(mouseBtns, newMouseBtns) || changeInMouseButtons(win)) {
 			y := mainHeight - mousePos.Y // OpenGL uses inverted Y
 			client.MoveMouse(image.Pt(int(mousePos.X), int(y)), newMouseBtns...)
@@ -187,9 +188,8 @@ func mouseButtons(win *pixelgl.Window) []bring.MouseButton {
 	return btns
 }
 
-func mouseInWindow(win *pixelgl.Window) bool {
-	p := win.MousePosition()
-	return win.Bounds().Contains(p)
+func mouseInWindow(win *pixelgl.Window, mousePos pixel.Vec) bool {
+	return win.Bounds().Contains(mousePos)
 }
 
 func main() {
