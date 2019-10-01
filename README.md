@@ -3,14 +3,14 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/deluan/bring)](https://goreportcard.com/report/github.com/deluan/bring)
 [![Documentation](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat)](https://godoc.org/github.com/deluan/bring) 
 
-Go Client for [Apache Guacamole](http://guacamole.apache.org) Protocol.
+Go client library for [Apache Guacamole](http://guacamole.apache.org) Protocol.
 
 ## Why?
 Apache Guacamole was created with the goal of making a dedicated client unnecessary. So why create a client?!
 
-The idea is that if you need to control a remote machine from your Go code, you can leverage the Guacamole protocol and the `guacd` server as a bridge. This way you can use any protocol supported by Guacamole (currently RDP and VNC, with X11 coming in the future) to do screen capture and remote control of networked servers/desktop machines.
+The idea is that if you need to control a remote machine from your Go code, you can leverage the Guacamole protocol and the `guacd` server as a bridge. This way you can use any protocol supported by Guacamole (currently RDP and VNC, with X11 coming in the future) to do screen capture and remote control of networked servers/desktop machines from within your Go app.
 
-My use case was to automate some tasks in a VirtualBox VM, but there was no functional support for the VirtualBox XPCOM API on Macs (my host platform), nor a working RDP implementation.
+My use case was to automate some tasks in a VirtualBox VM, but there was no Go support for the VirtualBox XPCOM API on Macs (my host platform), nor a working RDP client implementation in Go. Instead of writing a new RDP client, why not leverage the awesome Guacamole project and get support for multiple protocols?
 
 ## Documentation
 
