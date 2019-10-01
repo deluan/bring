@@ -1,6 +1,7 @@
 package bring
 
 import (
+	"image/draw"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -56,6 +57,39 @@ func TestLayers(t *testing.T) {
 				So(layers[0], ShouldEqual, l)
 			})
 		})
+
+		Convey("When I have a empty buffer", func() {
+			dst := newBuffer()
+			src := newBuffer()
+			src.Resize(100, 100)
+			Convey("When I copy another buffer to it", func() {
+				dst.Copy(src, 0, 0, 100, 100, 0, 0, draw.Src)
+
+				Convey("It grows the buffer to fit the source", func() {
+					So(dst.width, ShouldEqual, 100)
+					So(dst.height, ShouldEqual, 100)
+				})
+			})
+
+			Convey("When I try to copy a larger rectangle from the source buffer", func() {
+				dst.Copy(src, 0, 0, 200, 200, 0, 0, draw.Src)
+
+				Convey("It clips the source canvas", func() {
+					So(dst.width, ShouldEqual, 100)
+					So(dst.height, ShouldEqual, 100)
+				})
+			})
+
+			Convey("When I try to copy a rectangle from outside of the src canvas", func() {
+				dst.Copy(src, 120, 120, 10, 10, 0, 0, draw.Src)
+
+				Convey("It does not copy anything", func() {
+					So(dst.width, ShouldEqual, 0)
+					So(dst.height, ShouldEqual, 0)
+				})
+			})
+		})
+
 	})
 
 	Convey("Given an empty buffer", t, func() {
@@ -110,4 +144,5 @@ func TestLayers(t *testing.T) {
 
 		})
 	})
+
 }
