@@ -30,10 +30,11 @@ doc:
 	godoc -http=":6060" -goroot=$$GOPATH
 
 release:
+	@if [[ ! "${V}" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "Usage: make release V=X.X.X"; exit 1; fi
 	go mod tidy
 	make test
 	git add .
-	git ci -m "Release ${VERSION}"
-	git tag ${VERSION}
-	git push origin ${VERSION}
+	git ci -m "Release v${V}"
+	git tag v${V}
+	git push origin v${V}
 	git push master
