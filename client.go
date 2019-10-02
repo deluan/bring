@@ -1,9 +1,12 @@
 package bring
 
 import (
+	"errors"
 	"image"
 	"strconv"
 )
+
+var ErrInvalidKeyCode = errors.New("invalid key code")
 
 // Guacamole protocol client. Given a Session, automatically handles incoming
 // and outgoing Guacamole instructions via the provided session, updating its
@@ -112,7 +115,11 @@ func (c *Client) SendKey(key KeyCode, pressed bool) error {
 	if pressed {
 		p = "1"
 	}
-	for _, k := range key {
+	keySym, ok := keySyms[key]
+	if !ok {
+		return ErrInvalidKeyCode
+	}
+	for _, k := range keySym {
 		keycode := strconv.Itoa(k)
 		err := c.session.Send(NewInstruction("key", keycode, p))
 		if err != nil {

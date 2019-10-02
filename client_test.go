@@ -2,6 +2,7 @@ package bring
 
 import (
 	"image"
+	"math"
 	"strconv"
 	"testing"
 
@@ -50,25 +51,36 @@ func TestClient(t *testing.T) {
 
 		Convey("When it receives a key with single keyscan", func() {
 			err := c.SendKey(KeyBackspace, false)
+			keyBackspace := keySyms[KeyBackspace]
 
 			Convey("It sends the keycode", func() {
 				So(err, ShouldBeNil)
 				So(t.sent, ShouldHaveLength, 1)
 				So(t.sent[0].opcode, ShouldEqual, "key")
-				So(t.sent[0].args, ShouldResemble, []string{strconv.Itoa(KeyBackspace[0]), "0"})
+				So(t.sent[0].args, ShouldResemble, []string{strconv.Itoa(keyBackspace[0]), "0"})
 			})
 		})
 
 		Convey("When it receives a key with multiple keyscans", func() {
 			err := c.SendKey(KeyRightShift, true)
+			keyRightShift := keySyms[KeyRightShift]
 
 			Convey("It sends the keycode", func() {
 				So(err, ShouldBeNil)
-				So(t.sent, ShouldHaveLength, len(KeyRightShift))
+				So(t.sent, ShouldHaveLength, len(keyRightShift))
 				So(t.sent[0].opcode, ShouldEqual, "key")
-				So(t.sent[0].args, ShouldResemble, []string{strconv.Itoa(KeyRightShift[0]), "1"})
+				So(t.sent[0].args, ShouldResemble, []string{strconv.Itoa(keyRightShift[0]), "1"})
 				So(t.sent[1].opcode, ShouldEqual, "key")
-				So(t.sent[1].args, ShouldResemble, []string{strconv.Itoa(KeyRightShift[1]), "1"})
+				So(t.sent[1].args, ShouldResemble, []string{strconv.Itoa(keyRightShift[1]), "1"})
+			})
+		})
+
+		Convey("When it receives an invalid KeyCode", func() {
+			err := c.SendKey(KeyCode(math.MaxInt32), true)
+
+			Convey("It returns ErrInvalidKeyCode", func() {
+				So(err, ShouldResemble, ErrInvalidKeyCode)
+				So(t.sent, ShouldHaveLength, 0)
 			})
 		})
 

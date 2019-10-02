@@ -14,9 +14,7 @@ const (
 	SessionActive
 )
 
-var (
-	ErrNotConnected = errors.New("not connected")
-)
+var ErrNotConnected = errors.New("not connected")
 
 const pingFrequency = 5 * time.Second
 
