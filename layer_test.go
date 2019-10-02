@@ -12,7 +12,7 @@ func TestLayers(t *testing.T) {
 		layers := newLayers()
 		layers.getDefault().Resize(1024, 768)
 
-		Convey("getDefault returns the Layer 0", func() {
+		Convey("getDefault returns the layer 0", func() {
 			So(layers.getDefault(), ShouldEqual, layers[0])
 		})
 

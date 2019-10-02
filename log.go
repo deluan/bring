@@ -2,6 +2,8 @@ package bring
 
 import "log"
 
+// Logger interface used by this package. It is compatible with Logrus,
+// but anything implementing this interface can be used
 type Logger interface {
 	Tracef(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
@@ -10,6 +12,7 @@ type Logger interface {
 	Errorf(format string, args ...interface{})
 }
 
+// Simple console logger
 type DefaultLogger struct {
 	Quiet bool
 }
@@ -44,6 +47,7 @@ func (l *DefaultLogger) Errorf(format string, args ...interface{}) {
 	}
 }
 
+// Logger that discards all messages
 type DiscardLogger struct{}
 
 func (d *DiscardLogger) Tracef(format string, args ...interface{}) {}

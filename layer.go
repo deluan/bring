@@ -8,7 +8,7 @@ import (
 	"github.com/tfriedel6/canvas/backend/softwarebackend"
 )
 
-type Layer struct {
+type layer struct {
 	width        int
 	height       int
 	image        *image.RGBA
@@ -21,24 +21,24 @@ type Layer struct {
 	autosize     bool
 }
 
-func (l *Layer) updateModifiedRect(modArea image.Rectangle) {
+func (l *layer) updateModifiedRect(modArea image.Rectangle) {
 	before := l.modifiedRect
 	l.modifiedRect = l.modifiedRect.Union(modArea)
 	l.modified = l.modified || !before.Eq(l.modifiedRect)
 }
 
-func (l *Layer) resetModified() {
+func (l *layer) resetModified() {
 	l.modifiedRect = image.Rectangle{}
 	l.modified = false
 }
 
-func (l *Layer) setupCanvas() {
+func (l *layer) setupCanvas() {
 	be := softwarebackend.New(l.width, l.height)
 	be.Image = l.image
 	l.gc = canvas.New(be)
 }
 
-func (l *Layer) fitRect(x int, y int, w int, h int) {
+func (l *layer) fitRect(x int, y int, w int, h int) {
 	rect := image.Rect(x, y, x+w, y+h)
 	final := l.image.Bounds().Union(rect)
 	l.Resize(final.Max.X, final.Max.Y)
@@ -50,7 +50,7 @@ func copyImage(dest draw.Image, x, y int, src image.Image, sr image.Rectangle, o
 	draw.Draw(dest, dr, src, sr.Min, op)
 }
 
-func (l *Layer) Copy(srcLayer *Layer, srcx, srcy, srcw, srch, x, y int, op draw.Op) {
+func (l *layer) Copy(srcLayer *layer, srcx, srcy, srcw, srch, x, y int, op draw.Op) {
 	srcImg := srcLayer.image
 	srcDim := srcImg.Bounds()
 
@@ -82,7 +82,7 @@ func (l *Layer) Copy(srcLayer *Layer, srcx, srcy, srcw, srch, x, y int, op draw.
 	l.updateModifiedRect(image.Rect(x, y, x+srcw, y+srch))
 }
 
-func (l *Layer) Draw(x, y int, src image.Image, op draw.Op) {
+func (l *layer) Draw(x, y int, src image.Image, op draw.Op) {
 	srcDim := src.Bounds()
 	if l.autosize {
 		l.fitRect(x, y, srcDim.Max.X, srcDim.Max.Y)
@@ -91,7 +91,7 @@ func (l *Layer) Draw(x, y int, src image.Image, op draw.Op) {
 	l.updateModifiedRect(image.Rect(x, y, x+srcDim.Max.X, y+srcDim.Max.Y))
 }
 
-func (l *Layer) Resize(w int, h int) {
+func (l *layer) Resize(w int, h int) {
 	original := l.image.Bounds()
 	if w == l.width && h == l.height {
 		return
@@ -105,7 +105,7 @@ func (l *Layer) Resize(w int, h int) {
 	l.updateModifiedRect(original.Union(l.image.Bounds()))
 }
 
-func (l *Layer) appendToPath(rect image.Rectangle) {
+func (l *layer) appendToPath(rect image.Rectangle) {
 	if !l.pathOpen {
 		l.gc.BeginPath()
 		l.pathOpen = true
@@ -114,25 +114,25 @@ func (l *Layer) appendToPath(rect image.Rectangle) {
 	l.pathRect = l.pathRect.Union(rect)
 }
 
-func (l *Layer) endPath() {
+func (l *layer) endPath() {
 	l.updateModifiedRect(l.pathRect)
 	l.pathOpen = false
 	l.pathRect = image.Rectangle{}
 }
 
-func (l *Layer) Rect(x int, y int, width int, height int) {
+func (l *layer) Rect(x int, y int, width int, height int) {
 	l.appendToPath(image.Rect(x, y, x+width, y+height))
 	l.gc.Rect(float64(x), float64(y), float64(width), float64(height))
 }
 
-func (l *Layer) Fill(r byte, g byte, b byte, a byte, op draw.Op) {
+func (l *layer) Fill(r byte, g byte, b byte, a byte, op draw.Op) {
 	// Ignores op, as the canvas library does not support it :/
 	l.gc.SetFillStyle(r, g, b, a)
 	l.gc.Fill()
 	l.endPath()
 }
 
-type layers map[int]*Layer
+type layers map[int]*layer
 
 func newLayers() layers {
 	ls := make(layers)
@@ -141,8 +141,8 @@ func newLayers() layers {
 	return ls
 }
 
-func newBuffer() *Layer {
-	l := &Layer{
+func newBuffer() *layer {
+	l := &layer{
 		image:    image.NewRGBA(image.Rect(0, 0, 0, 0)),
 		autosize: true,
 	}
@@ -150,8 +150,8 @@ func newBuffer() *Layer {
 	return l
 }
 
-func newVisibleLayer(l0 *Layer) *Layer {
-	l := &Layer{
+func newVisibleLayer(l0 *layer) *layer {
+	l := &layer{
 		width:   l0.width,
 		height:  l0.height,
 		image:   image.NewRGBA(image.Rect(0, 0, l0.width, l0.height)),
@@ -161,11 +161,11 @@ func newVisibleLayer(l0 *Layer) *Layer {
 	return l
 }
 
-func (ls layers) getDefault() *Layer {
+func (ls layers) getDefault() *layer {
 	return ls[0]
 }
 
-func (ls layers) get(id int) *Layer {
+func (ls layers) get(id int) *layer {
 	if l, ok := ls[id]; ok {
 		return l
 	}

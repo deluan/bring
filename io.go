@@ -17,7 +17,7 @@ func NewInstructionIO(sock io.ReadWriteCloser) *InstructionIO {
 	conn := sock
 	return &InstructionIO{
 		conn:   conn,
-		input:  bufio.NewReaderSize(conn, MaxInstructionLength),
+		input:  bufio.NewReaderSize(conn, maxInstructionLength),
 		output: bufio.NewWriter(conn),
 	}
 }

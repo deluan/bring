@@ -2,6 +2,7 @@ package bring
 
 type MouseButton int
 
+// Mouse buttons recognized by guacd
 const (
 	MouseLeft MouseButton = 1 << iota
 	MouseMiddle
@@ -12,6 +13,7 @@ const (
 
 type KeyCode []int
 
+// Keys recognized by guacd
 var (
 	KeyAgain                = KeyCode{0xFF66}
 	KeyAllCandidates        = KeyCode{0xFF3D}

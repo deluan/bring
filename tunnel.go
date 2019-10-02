@@ -14,14 +14,10 @@ const (
 	TunnelOpen
 )
 
-type OnInstructionHandler func(opcode string, elements ...string)
-
 type Tunnel interface {
 	// Connect to the tunnel with the given optional data. This data is
 	// typically used for authentication. The format of data accepted is
 	// up to the tunnel implementation.
-	//
-	// @param {String} data The data to send to the tunnel when connecting.
 	Connect(data string) error
 
 	// Disconnect from the tunnel.
@@ -29,17 +25,17 @@ type Tunnel interface {
 
 	// Send the given message through the tunnel to the service on the other
 	// side. All messages are guaranteed to be received in the order sent.
-	//
-	// @param {...*} elements
-	//     The elements of the message to send to the service on the other side
-	//     of the tunnel.
 	SendInstruction(ins ...*Instruction) error
 
+	// Receive a instruction from the service on the other side. This is a
+	// blocking call
 	ReceiveInstruction() (*Instruction, error)
 }
 
 const connectionTimeout = 5 * time.Second
 
+// Simple tunnel implementation over TCP sockets. This allows to connect directly to guacd,
+// without the need of any middleware
 type InetSocketTunnel struct {
 	address    string
 	socket     net.Conn
@@ -109,5 +105,3 @@ func (t *InetSocketTunnel) closeTunnel() {
 	t.state = TunnelClosed
 	_ = t.io.Close()
 }
-
-//func (t *InetSocketTunnel) listen()

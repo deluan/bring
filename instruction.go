@@ -7,9 +7,9 @@ import (
 	"unicode/utf8"
 )
 
-const MaxInstructionLength = 8192
+const maxInstructionLength = 8192
 
-// Errors
+// Possible errors returned by the ParseInstruction function
 var (
 	ErrInstructionMissDot   = errors.New("instruction without dot")
 	ErrInstructionMissComma = errors.New("instruction without comma")

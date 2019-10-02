@@ -10,7 +10,7 @@ import (
 // display using one or more graphic primitives.
 type Client struct {
 	session *Session
-	display *Display
+	display *display
 	streams streams
 	logger  Logger
 }

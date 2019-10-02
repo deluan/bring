@@ -15,9 +15,9 @@ var compositeOperations = map[byte]draw.Op{
 	0xE: draw.Over,
 }
 
-type Display struct {
+type display struct {
 	logger         Logger
-	cursor         *Layer
+	cursor         *layer
 	cursorHotspotX int
 	cursorHotspotY int
 	cursorX        int
@@ -25,14 +25,14 @@ type Display struct {
 	tasks          chan task
 	pendingTasks   sync.WaitGroup
 	layers         layers
-	defaultLayer   *Layer
+	defaultLayer   *layer
 	canvas         *image.RGBA
 	lastUpdate     int64
 	canvasAccess   sync.RWMutex
 }
 
-func newDisplay(logger Logger) *Display {
-	d := &Display{
+func newDisplay(logger Logger) *display {
+	d := &display{
 		logger: logger,
 		cursor: newBuffer(),
 		layers: newLayers(),
@@ -56,7 +56,7 @@ func (t *task) String() string {
 	return fmt.Sprintf("%s [%s]", t.name, t.uuid)
 }
 
-func (d *Display) scheduleTask(name string, t taskFunc) {
+func (d *display) scheduleTask(name string, t taskFunc) {
 	task := task{
 		taskFunc: t,
 		name:     name,
@@ -67,7 +67,7 @@ func (d *Display) scheduleTask(name string, t taskFunc) {
 	d.tasks <- task
 }
 
-func (d *Display) processSingleTask(t task) {
+func (d *display) processSingleTask(t task) {
 	d.canvasAccess.Lock()
 	d.logger.Tracef("Executing task %s", t.String())
 	defer func() {
@@ -90,7 +90,7 @@ func (d *Display) processSingleTask(t task) {
 	d.defaultLayer.resetModified()
 }
 
-func (d *Display) processTasks() {
+func (d *display) processTasks() {
 	for {
 		select {
 		case t := <-d.tasks:
@@ -99,7 +99,7 @@ func (d *Display) processTasks() {
 	}
 }
 
-func (d *Display) flush() error {
+func (d *display) flush() error {
 	id := uuid.New()
 	d.logger.Tracef("Waiting for %d pending tasks [%s]", len(d.tasks), id.String())
 	d.pendingTasks.Wait()
@@ -107,7 +107,7 @@ func (d *Display) flush() error {
 	return nil
 }
 
-func (d *Display) getCanvas() (image.Image, int64) {
+func (d *display) getCanvas() (image.Image, int64) {
 	d.canvasAccess.RLock()
 	defer func() {
 		d.canvasAccess.RUnlock()
@@ -115,14 +115,14 @@ func (d *Display) getCanvas() (image.Image, int64) {
 	return d.canvas, d.lastUpdate
 }
 
-func (d *Display) dispose(layerIdx int) {
+func (d *display) dispose(layerIdx int) {
 	d.scheduleTask("dispose", func() error {
 		d.layers.delete(layerIdx)
 		return nil
 	})
 }
 
-func (d *Display) copy(srcL, srcX, srcY, srcWidth, srcHeight, dstL, dstX, dstY int, compositeOperation byte) {
+func (d *display) copy(srcL, srcX, srcY, srcWidth, srcHeight, dstL, dstX, dstY int, compositeOperation byte) {
 	op := compositeOperations[compositeOperation]
 	d.scheduleTask("copy", func() error {
 		srcLayer := d.layers.get(srcL)
@@ -132,7 +132,7 @@ func (d *Display) copy(srcL, srcX, srcY, srcWidth, srcHeight, dstL, dstX, dstY i
 	})
 }
 
-func (d *Display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
+func (d *display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
 	op := compositeOperations[compositeOperation]
 	img, err := s.image()
 
@@ -146,7 +146,7 @@ func (d *Display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
 	})
 }
 
-func (d *Display) fill(layerIdx int, r, g, b, a, compositeOperation byte) {
+func (d *display) fill(layerIdx int, r, g, b, a, compositeOperation byte) {
 	op := compositeOperations[compositeOperation]
 	d.scheduleTask("fill", func() error {
 		layer := d.layers.get(layerIdx)
@@ -154,7 +154,7 @@ func (d *Display) fill(layerIdx int, r, g, b, a, compositeOperation byte) {
 		return nil
 	})
 }
-func (d *Display) rect(layerIdx int, x int, y int, width int, height int) {
+func (d *display) rect(layerIdx int, x int, y int, width int, height int) {
 	d.scheduleTask("rect", func() error {
 		layer := d.layers.get(layerIdx)
 		layer.Rect(x, y, width, height)
@@ -162,7 +162,7 @@ func (d *Display) rect(layerIdx int, x int, y int, width int, height int) {
 	})
 }
 
-func (d *Display) resize(layerIdx, w, h int) {
+func (d *display) resize(layerIdx, w, h int) {
 	d.scheduleTask("resize", func() error {
 		layer := d.layers.get(layerIdx)
 		layer.Resize(w, h)
@@ -174,12 +174,12 @@ func (d *Display) resize(layerIdx, w, h int) {
 	})
 }
 
-func (d *Display) hideCursor() {
+func (d *display) hideCursor() {
 	cr := image.Rect(d.cursorX, d.cursorY, d.cursorX+d.cursor.width, d.cursorY+d.cursor.height)
 	copyImage(d.canvas, d.cursorX, d.cursorY, d.defaultLayer.image, cr, draw.Src)
 }
 
-func (d *Display) moveCursor(x, y int) {
+func (d *display) moveCursor(x, y int) {
 	d.canvasAccess.Lock()
 	defer d.canvasAccess.Unlock()
 	d.hideCursor()
@@ -191,7 +191,7 @@ func (d *Display) moveCursor(x, y int) {
 	d.lastUpdate = time.Now().UnixNano()
 }
 
-func (d *Display) setCursor(cursorHotspotX, cursorHotspotY, srcL, srcX, srcY, srcWidth, srcHeight int) {
+func (d *display) setCursor(cursorHotspotX, cursorHotspotY, srcL, srcX, srcY, srcWidth, srcHeight int) {
 	d.scheduleTask("setCursor", func() error {
 		d.hideCursor()
 
