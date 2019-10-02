@@ -28,3 +28,20 @@ coverage:
 doc:
 	@echo "Doc server address: http://localhost:6060"
 	godoc -http=":6060" -goroot=$$GOPATH
+
+release:
+	go mod tidy
+	make test
+	git add .
+	git ci -m "Release ${VERSION}"
+	git tag ${VERSION}
+	git push origin ${VERSION}
+#
+#
+#$ go mod tidy
+#$ go test ./...
+#ok      example.com/hello       0.015s
+#$ git add go.mod go.sum hello.go hello_test.go
+#$ git commit -m "hello: changes for v0.1.0"
+#$ git tag v0.1.0
+#$ git push origin v0.1.0
