@@ -1,8 +1,8 @@
 # Bring
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/deluan/bring?label=latest)
+[![Documentation](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat)](https://godoc.org/github.com/deluan/bring) 
 [![Build Status](https://github.com/deluan/bring/workflows/CI/badge.svg)](https://github.com/deluan/bring/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/deluan/bring)](https://goreportcard.com/report/github.com/deluan/bring)
-[![Documentation](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat)](https://godoc.org/github.com/deluan/bring) 
 [![Maintainability](https://api.codeclimate.com/v1/badges/d35171fdba1795a6f74d/maintainability)](https://codeclimate.com/github/deluan/bring/maintainability)
 
 Go client library for [Apache Guacamole](http://guacamole.apache.org) Protocol.
