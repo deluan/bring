@@ -36,4 +36,4 @@ release:
 	@if [ -n "`git status -s`" ]; then echo "\n\nThere are pending changes. Please commit first"; exit 1; fi
 	git tag v${V}
 	git push origin v${V}
-	git push master
+	git push origin master
