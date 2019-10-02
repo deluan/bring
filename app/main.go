@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	mainWidth  = 1024
-	mainHeight = 768
+	mainWidth    = 1024
+	mainHeight   = 768
+	guacdAddress = "localhost:4822"
 )
 
 var stateNames = map[bring.SessionState]string{
@@ -33,7 +34,7 @@ func initBring(protocol, hostname, port string) *bring.Client {
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
 	logger.SetLevel(logrus.DebugLevel)
 
-	session, err := bring.NewSession("localhost:4822", protocol, map[string]string{
+	session, err := bring.NewSession(guacdAddress, protocol, map[string]string{
 		"hostname": hostname,
 		"port":     port,
 		"password": "vncpassword",
@@ -67,24 +68,27 @@ func run() {
 	win.Clear(colornames.Skyblue)
 	win.SetCursorVisible(false)
 
-	mat := pixel.IM
-	mat = mat.Moved(win.Bounds().Center())
-	//mat = mat.Scaled(win.Bounds().Center(), 900/1024)
-
 	frames := 0
 	second := time.Tick(time.Second)
 	var lastRefresh int64
 
 	var mousePos pixel.Vec
 	var mouseBtns []bring.MouseButton
+	var imgWidth, imgHeight int
 
 	for !win.Closed() {
 		// Process screen updates
 		img, lastUpdate := client.Canvas()
 		if lastRefresh != lastUpdate {
-			if img.Bounds().Dx() > 0 && img.Bounds().Dy() > 0 {
+			imgWidth = img.Bounds().Dx()
+			imgHeight = img.Bounds().Dy()
+			if imgWidth > 0 && imgHeight > 0 {
 				pic := pixel.PictureDataFromImage(img)
 				sprite := pixel.NewSprite(pic, pic.Bounds())
+				scale := pixel.V(mainWidth/float64(imgWidth), mainHeight/float64(imgHeight))
+				mat := pixel.IM
+				mat = mat.ScaledXY(pixel.ZV, scale)
+				mat = mat.Moved(win.Bounds().Center())
 				sprite.Draw(win, mat)
 			}
 			lastRefresh = lastUpdate
@@ -95,11 +99,15 @@ func run() {
 		newMousePos := win.MousePosition()
 		newMouseBtns := mouseButtons(win)
 		if mouseInWindow(win, newMousePos) &&
+			imgHeight > 0 && imgWidth > 0 &&
 			(mousePos != newMousePos || !reflect.DeepEqual(mouseBtns, newMouseBtns) || changeInMouseButtons(win)) {
-			y := mainHeight - mousePos.Y // OpenGL uses inverted Y
-			client.MoveMouse(image.Pt(int(mousePos.X), int(y)), newMouseBtns...)
 			mousePos = newMousePos
 			mouseBtns = newMouseBtns
+			scale := pixel.V(float64(imgWidth)/mainWidth, float64(imgHeight)/mainHeight)
+			newMousePos = newMousePos.ScaledXY(scale)
+			y := float64(imgHeight) - newMousePos.Y // OpenGL uses inverted Y
+			pos := image.Pt(int(newMousePos.X), int(y))
+			client.MoveMouse(pos, newMouseBtns...)
 		}
 
 		// Handle keyboard events
