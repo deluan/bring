@@ -46,16 +46,3 @@ func (l *DefaultLogger) Errorf(format string, args ...interface{}) {
 		log.Printf("ERRO: "+format, args...)
 	}
 }
-
-// Logger that discards all messages
-type DiscardLogger struct{}
-
-func (d *DiscardLogger) Tracef(format string, args ...interface{}) {}
-
-func (d *DiscardLogger) Debugf(format string, args ...interface{}) {}
-
-func (d *DiscardLogger) Infof(format string, args ...interface{}) {}
-
-func (d *DiscardLogger) Warnf(format string, args ...interface{}) {}
-
-func (d *DiscardLogger) Errorf(format string, args ...interface{}) {}

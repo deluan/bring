@@ -17,11 +17,11 @@ func TestClient(t *testing.T) {
 			In:       make(chan *protocol.Instruction, 100),
 			State:    SessionActive,
 			done:     make(chan bool),
-			logger:   &DiscardLogger{},
+			logger:   &DefaultLogger{Quiet: true},
 			tunnel:   t,
 			protocol: "vnc",
 		}
-		c, _ := NewClient(s, &DiscardLogger{})
+		c, _ := NewClient(s, &DefaultLogger{Quiet: true})
 
 		Convey("It exposes the session state", func() {
 			s.State = SessionHandshake
