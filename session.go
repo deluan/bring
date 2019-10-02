@@ -20,8 +20,8 @@ var (
 
 const pingFrequency = 5 * time.Second
 
-// Session is used to keep a connection with a guacd server, responsible for the initial handshake
-// and to send and receive instructions.
+// Session is used to create and keep a connection with a guacd server,
+// and it is responsible for the initial handshake and to send and receive instructions.
 // Instructions received are put in the In channel. Instructions are sent using the Send() function
 type Session struct {
 	In    chan *Instruction
