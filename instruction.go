@@ -30,6 +30,7 @@ func NewInstruction(opcode string, args ...string) *Instruction {
 }
 
 // ParseInstruction parses an instruction: 1.a,2.bc,3.def,10.abcdefghij;
+// Copied from Occamy project: https://github.com/changkun/occamy/blob/master/protocol/instruction.go#L38
 func ParseInstruction(raw []byte) (ins *Instruction, err error) {
 	var (
 		cursor   int
