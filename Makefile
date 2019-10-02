@@ -1,12 +1,12 @@
 
 run:
-	cd app; go run . vnc 10.0.0.11 5901
+	cd sample; go run . vnc 10.0.0.11 5901
 
 rdp:
-	cd app; go run . rdp `ipconfig getifaddr en0` 3389
+	cd sample; go run . rdp `ipconfig getifaddr en0` 3389
 
 qemu:
-	cd app; go run . vnc `ipconfig getifaddr en0` 5900
+	cd sample; go run . vnc `ipconfig getifaddr en0` 5900
 
 watch:
 	goconvey -cover -excludedDirs testdata .
@@ -20,7 +20,7 @@ bench:
 
 coverage:
 	mkdir -p reports
-	go test -coverprofile=reports/coverage.out 
+	go test -coverprofile=reports/coverage.out
 	go tool cover -func=reports/coverage.out
 	go tool cover -html=reports/coverage.out -o reports/index.html
 	open reports/index.html
