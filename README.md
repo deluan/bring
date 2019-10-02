@@ -11,18 +11,19 @@ Go client library for [Apache Guacamole](http://guacamole.apache.org) Protocol.
         
        go get github.com/deluan/bring
 
-2. Create a [Session](session.go) with the `NewSession()` function.
-3. Create a [Client](client.go) with the `NewClient()` function.
+2. Create a [Session](https://godoc.org/github.com/deluan/bring#Session) with the `NewSession()` function.
+3. Create a [Client](https://godoc.org/github.com/deluan/bring#Client) with the `NewClient()` function.
 4. Start the client with `go client.Start()`
 5. Get screen updates with `client.Screen()`
 5. Send keystrokes with `client.SendKey()`
 6. Send mouse updates with `client.SendMouse()`  
 
-See the [sample app](sample) for a working example
+See the [sample app](sample/main.go) for a working example
 
 ## Documentation
 
-The API is provided by the [Session](session.go) and the [Client](client.go) structs. 
+The API is provided by the [Session](https://godoc.org/github.com/deluan/bring#Session) 
+and the [Client](https://godoc.org/github.com/deluan/bring#Client) structs. 
 The [documentation](https://godoc.org/github.com/deluan/bring) is a work in progress, 
 but the API is very simple and you can take a look at all features available in the 
 [sample app](sample) provided. Here are the steps to run the app:
