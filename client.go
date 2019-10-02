@@ -52,18 +52,18 @@ func (c *Client) Start() {
 }
 
 // Returns a snapshot of the current screen, together with the last updated timestamp
-func (c *Client) Canvas() (image image.Image, lastUpdate int64) {
+func (c *Client) Screen() (image image.Image, lastUpdate int64) {
 	return c.display.getCanvas()
 }
 
-// Returns the currrent session state
+// Returns the current session state
 func (c *Client) State() SessionState {
 	return c.session.State
 }
 
 // Send mouse events to the server. An event is composed by position of the
 // cursor, and a list of any currently pressed MouseButtons
-func (c *Client) MoveMouse(p image.Point, pressedButtons ...MouseButton) {
+func (c *Client) SendMouse(p image.Point, pressedButtons ...MouseButton) {
 	if c.session.State != SessionActive {
 		return
 	}

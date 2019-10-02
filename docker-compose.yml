@@ -15,7 +15,7 @@ services:
   xvnc:
     image: consol/ubuntu-xfce-vnc:1.4.0
     environment:
-#      VNC_RESOLUTION: "1024x768"
+      VNC_RESOLUTION: "1024x768"
       VNC_PW: "vncpassword"
     networks:
       bring_network:

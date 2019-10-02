@@ -5,22 +5,51 @@
 
 Go client library for [Apache Guacamole](http://guacamole.apache.org) Protocol.
 
-## Why?
-Apache Guacamole was created with the goal of making a dedicated client unnecessary. So why create a client?!
+## Quick start (tl;dr)
 
-The idea is that if you need to control a remote machine from your Go code, you can leverage the Guacamole protocol and the `guacd` server as a bridge. This way you can use any protocol supported by Guacamole (currently RDP and VNC, with X11 coming in the future) to do screen capture and remote control of networked servers/desktop machines from within your Go app.
+1. Install the library in your project: 
+        
+       go get github.com/deluan/bring
 
-My use case was to automate some tasks in a VirtualBox VM, but there was no Go support for the VirtualBox XPCOM API on Macs (my host platform), nor a working RDP client implementation in Go. Instead of writing a new RDP client, why not leverage the awesome Guacamole project and get support for multiple protocols?
+2. Create a [Session](session.go) with the `NewSession()` function.
+3. Create a [Client](client.go) with the `NewClient()` function.
+4. Start the client with `go client.Start()`
+5. Get screen updates with `client.Screen()`
+5. Send keystrokes with `client.SendKey()`
+6. Send mouse updates with `client.SendMouse()`  
+
+See the [sample app](app) for a working example
 
 ## Documentation
 
-The API is provided by the [Client](client.go) struct. The [documentation](https://godoc.org/github.com/deluan/bring) is a work in progress, but the API is very simple and you can take a look at all features available in the [sample app](app) provided. Here are the steps to run the app:
+The API is provided by the [Session](session.go) and the [Client](client.go) structs. 
+The [documentation](https://godoc.org/github.com/deluan/bring) is a work in progress, 
+but the API is very simple and you can take a look at all features available in the 
+[sample app](app) provided. Here are the steps to run the app:
 
-1) You'll need a working `guacd` server in your machine. The easiest way is using docker and docker-compose. Just call `docker-compose up -d` in the root of this project. It starts the `guacd` server and a sample headless linux with a VNC server
+1) You'll need a working `guacd` server in your machine. The easiest way is using docker 
+and docker-compose. Just call `docker-compose up -d` in the root of this project. It 
+starts the `guacd` server and a sample headless linux with a VNC server
 
 2) Run the sample app with `make run`. It will connect to the linux container started by docker.
 
-Take a look at the Makefile to learn how to run it in different scenarios. Keep in mind that this sample has a hardcoded resolution of 1024x768
+Take a look at the Makefile to learn how to run it in different scenarios.
+
+## Why?
+
+Apache Guacamole was created with the goal of making a dedicated client unnecessary. 
+So why create a client?!
+
+The idea is that if you need to control a remote machine from your Go code, you can 
+leverage the Guacamole protocol and the `guacd` server as a bridge. This way you can 
+use any protocol supported by Guacamole (currently RDP and VNC, with X11 coming in 
+the future) to do screen capture and remote control of networked servers/desktop 
+machines from within your Go app.
+
+My use case was to automate some tasks in a VirtualBox VM, but there was no Go support 
+for the VirtualBox XPCOM API on Macs (my host platform), nor a working RDP client 
+implementation in Go. Instead of writing a new RDP client, why not leverage the awesome 
+Guacamole project and get support for multiple protocols?
 
 ## References:
 - [The Guacamole protocol](http://guacamole.apache.org/doc/gug/guacamole-protocol.html)

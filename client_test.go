@@ -29,7 +29,7 @@ func TestClient(t *testing.T) {
 		})
 
 		Convey("When it receives a mouse position", func() {
-			c.MoveMouse(image.Pt(10, 20))
+			c.SendMouse(image.Pt(10, 20))
 
 			Convey("It sends the position to the tunnel", func() {
 				So(t.sent[0].opcode, ShouldEqual, "mouse")
@@ -38,7 +38,7 @@ func TestClient(t *testing.T) {
 		})
 
 		Convey("When it receives mouse buttons", func() {
-			c.MoveMouse(image.Pt(10, 20), MouseLeft, MouseDown)
+			c.SendMouse(image.Pt(10, 20), MouseLeft, MouseDown)
 
 			Convey("It sends the position to the tunnel", func() {
 				So(t.sent[0].opcode, ShouldEqual, "mouse")
@@ -86,7 +86,7 @@ func TestClient(t *testing.T) {
 			Convey("It does not send anything", func() {
 				c.SendKey(KeyEnter, true)
 				c.SendText("abc")
-				c.MoveMouse(image.Pt(0, 0), MouseRight)
+				c.SendMouse(image.Pt(0, 0), MouseRight)
 
 				So(t.sent, ShouldBeEmpty)
 			})
