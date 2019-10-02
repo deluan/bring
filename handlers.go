@@ -89,6 +89,11 @@ var handlers = map[string]Handler{
 		return nil
 	},
 
+	"log": func(c *Client, args []string) error {
+		c.logger.Infof("Log from server:  %s", args[0])
+		return nil
+	},
+
 	"rect": func(c *Client, args []string) error {
 		layerIdx := parseInt(args[0])
 		x := parseInt(args[1])
@@ -113,7 +118,7 @@ var handlers = map[string]Handler{
 			c.logger.Errorf("Error flushing tasks: %s", err)
 		}
 		if err := c.session.Send(NewInstruction("sync", args...)); err != nil {
-			c.logger.Errorf("Failed send 'sync' back to server: %s", err)
+			c.logger.Errorf("Failed to send 'sync' back to server: %s", err)
 			return err
 		}
 		return nil
