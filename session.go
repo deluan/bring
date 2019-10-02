@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/deluan/bring/protocol"
 )
 
 type SessionState int
@@ -22,11 +24,11 @@ const pingFrequency = 5 * time.Second
 // and it is responsible for the initial handshake and to send and receive instructions.
 // Instructions received are put in the In channel. Instructions are sent using the Send() function
 type Session struct {
-	In    chan *Instruction
+	In    chan *protocol.Instruction
 	State SessionState
 	Id    string
 
-	tunnel   Tunnel
+	tunnel   protocol.Tunnel
 	logger   Logger
 	done     chan bool
 	config   map[string]string
@@ -34,7 +36,7 @@ type Session struct {
 }
 
 // NewSession creates a new connection with the guacd server, using the configuration provided
-func NewSession(addr string, protocol string, config map[string]string, logger ...Logger) (*Session, error) {
+func NewSession(addr string, remoteProtocol string, config map[string]string, logger ...Logger) (*Session, error) {
 	var log Logger
 	if len(logger) > 0 {
 		log = logger[0]
@@ -42,7 +44,7 @@ func NewSession(addr string, protocol string, config map[string]string, logger .
 		log = &DefaultLogger{}
 	}
 
-	t, err := NewInetSocketTunnel(addr)
+	t, err := protocol.NewInetSocketTunnel(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -54,17 +56,17 @@ func NewSession(addr string, protocol string, config map[string]string, logger .
 	}
 
 	s := &Session{
-		In:       make(chan *Instruction, 100),
+		In:       make(chan *protocol.Instruction, 100),
 		State:    SessionClosed,
 		done:     make(chan bool),
 		logger:   log,
 		tunnel:   t,
 		config:   config,
-		protocol: protocol,
+		protocol: remoteProtocol,
 	}
 
-	s.logger.Infof("Initiating %s session with %s", strings.ToUpper(protocol), addr)
-	err = s.Send(NewInstruction("select", protocol))
+	s.logger.Infof("Initiating %s session with %s", strings.ToUpper(remoteProtocol), addr)
+	err = s.Send(protocol.NewInstruction("select", remoteProtocol))
 	if err != nil {
 		s.logger.Errorf("Failed sending 'select': %s", err)
 		return nil, err
@@ -83,12 +85,12 @@ func (s *Session) Terminate() {
 	}
 	close(s.done)
 	s.State = SessionClosed
-	_ = s.tunnel.SendInstruction(NewInstruction("disconnect"))
+	_ = s.tunnel.SendInstruction(protocol.NewInstruction("disconnect"))
 	s.tunnel.Disconnect()
 }
 
 // Send instructions to the server. Multiple instructions are sent in one single transaction
-func (s *Session) Send(ins ...*Instruction) error {
+func (s *Session) Send(ins ...*protocol.Instruction) error {
 	for _, i := range ins {
 		s.logger.Debugf("C> %s", i)
 	}
@@ -102,7 +104,7 @@ func (s *Session) startKeepAlive() {
 		for {
 			select {
 			case <-ping.C:
-				err := s.Send(NewInstruction("nop"))
+				err := s.Send(protocol.NewInstruction("nop"))
 				if err != nil {
 					s.logger.Errorf("Failed ping the server: %s", err)
 				}
@@ -122,17 +124,17 @@ func (s *Session) startReader() {
 				s.Terminate()
 				break
 			}
-			if ins.opcode == "blob" {
+			if ins.Opcode == "blob" {
 				s.logger.Tracef("S> %s", ins)
 			} else {
 				s.logger.Debugf("S> %s", ins)
 			}
-			if ins.opcode == "nop" {
+			if ins.Opcode == "nop" {
 				continue
 			}
-			if ins.opcode == "ready" {
+			if ins.Opcode == "ready" {
 				s.State = SessionActive
-				s.Id = ins.args[0]
+				s.Id = ins.Args[0]
 				s.logger.Infof("Handshake successful. Got connection ID %s", s.Id)
 				s.startKeepAlive()
 				continue
@@ -151,12 +153,12 @@ func (s *Session) startReader() {
 	}()
 }
 
-func (s *Session) handShake(argsIns *Instruction) {
-	options := []*Instruction{
-		NewInstruction("size", "1024", "768", "96"),
-		NewInstruction("audio", ""),
-		NewInstruction("video", ""),
-		NewInstruction("image", ""),
+func (s *Session) handShake(argsIns *protocol.Instruction) {
+	options := []*protocol.Instruction{
+		protocol.NewInstruction("size", "1024", "768", "96"),
+		protocol.NewInstruction("audio", ""),
+		protocol.NewInstruction("video", ""),
+		protocol.NewInstruction("image", ""),
 	}
 
 	err := s.Send(options...)
@@ -165,12 +167,12 @@ func (s *Session) handShake(argsIns *Instruction) {
 		s.Terminate()
 	}
 
-	connectValues := make([]string, len(argsIns.args))
-	for i, argName := range argsIns.args {
+	connectValues := make([]string, len(argsIns.Args))
+	for i, argName := range argsIns.Args {
 		connectValues[i] = s.config[argName]
 	}
 
-	err = s.Send(NewInstruction("connect", connectValues...))
+	err = s.Send(protocol.NewInstruction("connect", connectValues...))
 	if err != nil {
 		s.logger.Errorf("Failed handshake when sending 'connect': %s", err)
 		s.Terminate()

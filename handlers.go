@@ -2,6 +2,8 @@ package bring
 
 import (
 	"strconv"
+
+	"github.com/deluan/bring/protocol"
 )
 
 // Handler func for  Guacamole instructions
@@ -117,7 +119,7 @@ var handlers = map[string]handlerFunc{
 		if err != nil {
 			c.logger.Errorf("Error flushing tasks: %s", err)
 		}
-		if err := c.session.Send(NewInstruction("sync", args...)); err != nil {
+		if err := c.session.Send(protocol.NewInstruction("sync", args...)); err != nil {
 			c.logger.Errorf("Failed to send 'sync' back to server: %s", err)
 			return err
 		}

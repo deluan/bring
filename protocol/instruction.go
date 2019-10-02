@@ -1,4 +1,4 @@
-package bring
+package protocol
 
 import (
 	"errors"
@@ -18,14 +18,14 @@ var (
 )
 
 type Instruction struct {
-	opcode string
-	args   []string
+	Opcode string
+	Args   []string
 }
 
 func NewInstruction(opcode string, args ...string) *Instruction {
 	return &Instruction{
-		opcode: opcode,
-		args:   args,
+		Opcode: opcode,
+		Args:   args,
 	}
 }
 
@@ -88,11 +88,11 @@ func ParseInstruction(raw []byte) (ins *Instruction, err error) {
 func (i *Instruction) String() string {
 	var b = strings.Builder{}
 
-	b.WriteString(strconv.Itoa(len(i.opcode)))
+	b.WriteString(strconv.Itoa(len(i.Opcode)))
 	b.WriteString(".")
-	b.WriteString(i.opcode)
+	b.WriteString(i.Opcode)
 
-	for _, a := range i.args {
+	for _, a := range i.Args {
 		b.WriteString(",")
 		b.WriteString(strconv.FormatInt(int64(utf8.RuneCountInString(a)), 10))
 		b.WriteString(".")

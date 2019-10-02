@@ -1,4 +1,4 @@
-package bring
+package protocol
 
 import (
 	"testing"
@@ -33,24 +33,24 @@ func TestInstruction(t *testing.T) {
 			ri := "3.nop;"
 			Convey("It parses it to a Instruction struct", func() {
 				i, _ := ParseInstruction([]byte(ri))
-				So(i.opcode, ShouldEqual, "nop")
-				So(i.args, ShouldHaveLength, 0)
+				So(i.Opcode, ShouldEqual, "nop")
+				So(i.Args, ShouldHaveLength, 0)
 			})
 		})
 		Convey("Given a raw string with an instruction with UTF args", func() {
 			ri := "5.hello,2.世界,3.yes;"
 			Convey("It parses it to a Instruction struct", func() {
 				i, _ := ParseInstruction([]byte(ri))
-				So(i.opcode, ShouldEqual, "hello")
-				So(i.args, ShouldResemble, []string{"世界", "yes"})
+				So(i.Opcode, ShouldEqual, "hello")
+				So(i.Args, ShouldResemble, []string{"世界", "yes"})
 			})
 		})
 		Convey("Given a raw string with an instruction with an empty arg", func() {
 			ri := "4.test,0.;"
 			Convey("It parses it to a Instruction struct", func() {
 				i, _ := ParseInstruction([]byte(ri))
-				So(i.opcode, ShouldEqual, "test")
-				So(i.args, ShouldResemble, []string{""})
+				So(i.Opcode, ShouldEqual, "test")
+				So(i.Args, ShouldResemble, []string{""})
 			})
 		})
 	})

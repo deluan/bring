@@ -4,6 +4,8 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	"github.com/deluan/bring/protocol"
 )
 
 const disconnectOpcode = "disconnect"
@@ -33,13 +35,13 @@ func (s *fakeServer) start() string {
 
 func (s *fakeServer) handleRequest(conn net.Conn) {
 	defer conn.Close()
-	io := NewInstructionIO(conn)
+	io := protocol.NewInstructionIO(conn)
 	for {
 		recv, err := io.Read()
 		if err != nil {
 			return
 		}
-		opcode := recv.opcode
+		opcode := recv.Opcode
 
 		_, err = io.WriteRaw([]byte(s.replies[opcode]))
 		if err != nil {
@@ -51,7 +53,7 @@ func (s *fakeServer) handleRequest(conn net.Conn) {
 		s.messagesReceived = append(s.messagesReceived, recv.String())
 		s.opcodesReceived = append(s.opcodesReceived, opcode)
 	}
-	_, err := io.Write(NewInstruction(disconnectOpcode))
+	_, err := io.Write(protocol.NewInstruction(disconnectOpcode))
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +71,7 @@ func waitForHandshake(t *testing.T, s *Session) {
 }
 
 func disconnectFromFakeServer(t *testing.T, s *Session) {
-	err := s.Send(NewInstruction(disconnectOpcode))
+	err := s.Send(protocol.NewInstruction(disconnectOpcode))
 	if err != nil {
 		t.Fatalf("Error trying to disconnect from fake server: %s", err)
 	}

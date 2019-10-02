@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/deluan/bring/protocol"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -13,7 +14,7 @@ func TestClient(t *testing.T) {
 	Convey("Given a Client with an active session", t, func() {
 		t := &mockTunnel{}
 		s := &Session{
-			In:       make(chan *Instruction, 100),
+			In:       make(chan *protocol.Instruction, 100),
 			State:    SessionActive,
 			done:     make(chan bool),
 			logger:   &DiscardLogger{},
@@ -34,8 +35,8 @@ func TestClient(t *testing.T) {
 
 			Convey("It sends the position to the tunnel", func() {
 				So(err, ShouldBeNil)
-				So(t.sent[0].opcode, ShouldEqual, "mouse")
-				So(t.sent[0].args, ShouldResemble, []string{"10", "20", "0"})
+				So(t.sent[0].Opcode, ShouldEqual, "mouse")
+				So(t.sent[0].Args, ShouldResemble, []string{"10", "20", "0"})
 			})
 		})
 
@@ -44,8 +45,8 @@ func TestClient(t *testing.T) {
 
 			Convey("It sends the position to the tunnel", func() {
 				So(err, ShouldBeNil)
-				So(t.sent[0].opcode, ShouldEqual, "mouse")
-				So(t.sent[0].args[2], ShouldEqual, strconv.Itoa(1+16))
+				So(t.sent[0].Opcode, ShouldEqual, "mouse")
+				So(t.sent[0].Args[2], ShouldEqual, strconv.Itoa(1+16))
 			})
 		})
 
@@ -56,8 +57,8 @@ func TestClient(t *testing.T) {
 			Convey("It sends the keycode", func() {
 				So(err, ShouldBeNil)
 				So(t.sent, ShouldHaveLength, 1)
-				So(t.sent[0].opcode, ShouldEqual, "key")
-				So(t.sent[0].args, ShouldResemble, []string{strconv.Itoa(keyBackspace[0]), "0"})
+				So(t.sent[0].Opcode, ShouldEqual, "key")
+				So(t.sent[0].Args, ShouldResemble, []string{strconv.Itoa(keyBackspace[0]), "0"})
 			})
 		})
 
@@ -68,10 +69,10 @@ func TestClient(t *testing.T) {
 			Convey("It sends the keycode", func() {
 				So(err, ShouldBeNil)
 				So(t.sent, ShouldHaveLength, len(keyRightShift))
-				So(t.sent[0].opcode, ShouldEqual, "key")
-				So(t.sent[0].args, ShouldResemble, []string{strconv.Itoa(keyRightShift[0]), "1"})
-				So(t.sent[1].opcode, ShouldEqual, "key")
-				So(t.sent[1].args, ShouldResemble, []string{strconv.Itoa(keyRightShift[1]), "1"})
+				So(t.sent[0].Opcode, ShouldEqual, "key")
+				So(t.sent[0].Args, ShouldResemble, []string{strconv.Itoa(keyRightShift[0]), "1"})
+				So(t.sent[1].Opcode, ShouldEqual, "key")
+				So(t.sent[1].Args, ShouldResemble, []string{strconv.Itoa(keyRightShift[1]), "1"})
 			})
 		})
 
@@ -90,10 +91,10 @@ func TestClient(t *testing.T) {
 			Convey("It sends all keycodes", func() {
 				So(err, ShouldBeNil)
 				So(t.sent, ShouldHaveLength, 10)
-				So(t.sent[0], ShouldResemble, NewInstruction("key", to_i("b"), "1"))
-				So(t.sent[1], ShouldResemble, NewInstruction("key", to_i("b"), "0"))
-				So(t.sent[2], ShouldResemble, NewInstruction("key", to_i("r"), "1"))
-				So(t.sent[3], ShouldResemble, NewInstruction("key", to_i("r"), "0"))
+				So(t.sent[0], ShouldResemble, protocol.NewInstruction("key", to_i("b"), "1"))
+				So(t.sent[1], ShouldResemble, protocol.NewInstruction("key", to_i("b"), "0"))
+				So(t.sent[2], ShouldResemble, protocol.NewInstruction("key", to_i("r"), "1"))
+				So(t.sent[3], ShouldResemble, protocol.NewInstruction("key", to_i("r"), "0"))
 			})
 		})
 
@@ -121,11 +122,11 @@ func to_i(c string) string {
 }
 
 type mockTunnel struct {
-	Tunnel
-	sent []*Instruction
+	protocol.Tunnel
+	sent []*protocol.Instruction
 }
 
-func (mt *mockTunnel) SendInstruction(ins ...*Instruction) error {
+func (mt *mockTunnel) SendInstruction(ins ...*protocol.Instruction) error {
 	mt.sent = append(mt.sent, ins...)
 	return nil
 }

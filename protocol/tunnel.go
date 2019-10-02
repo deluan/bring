@@ -1,6 +1,7 @@
-package bring
+package protocol
 
 import (
+	"errors"
 	"net"
 	"sync"
 	"time"
@@ -13,6 +14,8 @@ const (
 	TunnelClosed TunnelState = iota
 	TunnelOpen
 )
+
+var ErrNotConnected = errors.New("not connected")
 
 type Tunnel interface {
 	// Connect to the tunnel with the given optional data. This data is

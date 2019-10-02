@@ -4,6 +4,8 @@ import (
 	"errors"
 	"image"
 	"strconv"
+
+	"github.com/deluan/bring/protocol"
 )
 
 var ErrInvalidKeyCode = errors.New("invalid key code")
@@ -42,12 +44,12 @@ func (c *Client) Start() {
 	for {
 		select {
 		case ins := <-c.session.In:
-			h, ok := handlers[ins.opcode]
+			h, ok := handlers[ins.Opcode]
 			if !ok {
-				c.logger.Errorf("Instruction not implemented: %s", ins.opcode)
+				c.logger.Errorf("Instruction not implemented: %s", ins.Opcode)
 				continue
 			}
-			err := h(c, ins.args)
+			err := h(c, ins.Args)
 			if err != nil {
 				c.session.Terminate()
 			}
@@ -77,7 +79,7 @@ func (c *Client) SendMouse(p image.Point, pressedButtons ...MouseButton) error {
 		buttonMask |= int(b)
 	}
 	c.display.moveCursor(p.X, p.Y)
-	err := c.session.Send(NewInstruction("mouse", strconv.Itoa(p.X), strconv.Itoa(p.Y), strconv.Itoa(buttonMask)))
+	err := c.session.Send(protocol.NewInstruction("mouse", strconv.Itoa(p.X), strconv.Itoa(p.Y), strconv.Itoa(buttonMask)))
 	if err != nil {
 		return err
 	}
@@ -93,11 +95,11 @@ func (c *Client) SendText(sequence string) error {
 
 	for _, ch := range sequence {
 		keycode := strconv.Itoa(int(ch))
-		err := c.session.Send(NewInstruction("key", keycode, "1"))
+		err := c.session.Send(protocol.NewInstruction("key", keycode, "1"))
 		if err != nil {
 			return nil
 		}
-		err = c.session.Send(NewInstruction("key", keycode, "0"))
+		err = c.session.Send(protocol.NewInstruction("key", keycode, "0"))
 		if err != nil {
 			return nil
 		}
@@ -121,7 +123,7 @@ func (c *Client) SendKey(key KeyCode, pressed bool) error {
 	}
 	for _, k := range keySym {
 		keycode := strconv.Itoa(k)
-		err := c.session.Send(NewInstruction("key", keycode, p))
+		err := c.session.Send(protocol.NewInstruction("key", keycode, p))
 		if err != nil {
 			return nil
 		}

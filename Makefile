@@ -13,7 +13,7 @@ watch:
 
 .PHONY: test
 test:
-	go test -cover -v .
+	go test -cover -v ./...
 
 bench:
 	go test -bench=. -run=XXX ./...
