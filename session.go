@@ -1,6 +1,7 @@
 package bring
 
 import (
+	"errors"
 	"strings"
 	"time"
 )
@@ -13,8 +14,15 @@ const (
 	SessionActive
 )
 
+var (
+	ErrNotConnected = errors.New("not connected")
+)
+
 const pingFrequency = 5 * time.Second
 
+// Session is used to keep a connection with a guacd server, responsible for the initial handshake
+// and to send and receive instructions.
+// Instructions received are put in the In channel. Instructions are sent using the Send() function
 type Session struct {
 	In    chan *Instruction
 	State SessionState
@@ -27,6 +35,7 @@ type Session struct {
 	protocol string
 }
 
+// NewSession creates a new connection with the guacd server, using the configuration provided
 func NewSession(addr string, protocol string, config map[string]string, logger ...Logger) (*Session, error) {
 	var log Logger
 	if len(logger) > 0 {
@@ -69,6 +78,7 @@ func NewSession(addr string, protocol string, config map[string]string, logger .
 	return s, nil
 }
 
+// Terminate the current session, disconnecting from the server
 func (s *Session) Terminate() {
 	if s.State == SessionClosed {
 		return
@@ -79,6 +89,7 @@ func (s *Session) Terminate() {
 	s.tunnel.Disconnect()
 }
 
+// Send instructions to the server. Multiple instructions are sent in one single transaction
 func (s *Session) Send(ins ...*Instruction) error {
 	for _, i := range ins {
 		s.logger.Debugf("C> %s", i)

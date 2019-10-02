@@ -76,6 +76,7 @@ func (t *InetSocketTunnel) SendInstruction(ins ...*Instruction) error {
 	return err
 }
 
+// TODO Implement timeout
 func (t *InetSocketTunnel) ReceiveInstruction() (*Instruction, error) {
 	if t.state != TunnelOpen {
 		return nil, ErrNotConnected
