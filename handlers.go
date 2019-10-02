@@ -5,10 +5,10 @@ import (
 )
 
 // Handler func for  Guacamole instructions
-type Handler = func(client *Client, args []string) error
+type handlerFunc = func(client *Client, args []string) error
 
 // Handlers for all instruction opcodes receivable by this Guacamole client.
-var handlers = map[string]Handler{
+var handlers = map[string]handlerFunc{
 	"blob": func(c *Client, args []string) error {
 		idx := parseInt(args[0])
 		return c.streams.append(idx, args[1])
