@@ -39,14 +39,15 @@ func (c *Client) Start() {
 	for {
 		select {
 		case ins := <-c.session.In:
-			if h, ok := handlers[ins.opcode]; ok {
-				err := h(c, ins.args)
-				if err != nil {
-					c.session.Terminate()
-				}
+			h, ok := handlers[ins.opcode]
+			if !ok {
+				c.logger.Errorf("Instruction not implemented: %s", ins.opcode)
 				continue
 			}
-			c.logger.Errorf("Not implemented: %s", ins.opcode)
+			err := h(c, ins.args)
+			if err != nil {
+				c.session.Terminate()
+			}
 		}
 	}
 }
@@ -63,9 +64,9 @@ func (c *Client) State() SessionState {
 
 // Send mouse events to the server. An event is composed by position of the
 // cursor, and a list of any currently pressed MouseButtons
-func (c *Client) SendMouse(p image.Point, pressedButtons ...MouseButton) {
+func (c *Client) SendMouse(p image.Point, pressedButtons ...MouseButton) error {
 	if c.session.State != SessionActive {
-		return
+		return ErrNotConnected
 	}
 
 	buttonMask := 0
@@ -75,28 +76,36 @@ func (c *Client) SendMouse(p image.Point, pressedButtons ...MouseButton) {
 	c.display.moveCursor(p.X, p.Y)
 	err := c.session.Send(NewInstruction("mouse", strconv.Itoa(p.X), strconv.Itoa(p.Y), strconv.Itoa(buttonMask)))
 	if err != nil {
-		c.logger.Errorf("could not send mouse position: %s", err)
+		return err
 	}
+	return nil
 }
 
 // Send the sequence of characters as they were typed. Only works with simple chars
 // (no combination with control keys)
-func (c *Client) SendText(sequence string) {
+func (c *Client) SendText(sequence string) error {
 	if c.session.State != SessionActive {
-		return
+		return ErrNotConnected
 	}
 
 	for _, ch := range sequence {
 		keycode := strconv.Itoa(int(ch))
-		c.session.Send(NewInstruction("key", keycode, "1"))
-		c.session.Send(NewInstruction("key", keycode, "0"))
+		err := c.session.Send(NewInstruction("key", keycode, "1"))
+		if err != nil {
+			return nil
+		}
+		err = c.session.Send(NewInstruction("key", keycode, "0"))
+		if err != nil {
+			return nil
+		}
 	}
+	return nil
 }
 
 // Send key presses and releases.
-func (c *Client) SendKey(key KeyCode, pressed bool) {
+func (c *Client) SendKey(key KeyCode, pressed bool) error {
 	if c.session.State != SessionActive {
-		return
+		return ErrNotConnected
 	}
 
 	var p string = "0"
@@ -105,6 +114,10 @@ func (c *Client) SendKey(key KeyCode, pressed bool) {
 	}
 	for _, k := range key {
 		keycode := strconv.Itoa(k)
-		c.session.Send(NewInstruction("key", keycode, p))
+		err := c.session.Send(NewInstruction("key", keycode, p))
+		if err != nil {
+			return nil
+		}
 	}
+	return nil
 }

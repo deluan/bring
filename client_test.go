@@ -29,27 +29,30 @@ func TestClient(t *testing.T) {
 		})
 
 		Convey("When it receives a mouse position", func() {
-			c.SendMouse(image.Pt(10, 20))
+			err := c.SendMouse(image.Pt(10, 20))
 
 			Convey("It sends the position to the tunnel", func() {
+				So(err, ShouldBeNil)
 				So(t.sent[0].opcode, ShouldEqual, "mouse")
 				So(t.sent[0].args, ShouldResemble, []string{"10", "20", "0"})
 			})
 		})
 
 		Convey("When it receives mouse buttons", func() {
-			c.SendMouse(image.Pt(10, 20), MouseLeft, MouseDown)
+			err := c.SendMouse(image.Pt(10, 20), MouseLeft, MouseDown)
 
 			Convey("It sends the position to the tunnel", func() {
+				So(err, ShouldBeNil)
 				So(t.sent[0].opcode, ShouldEqual, "mouse")
 				So(t.sent[0].args[2], ShouldEqual, strconv.Itoa(1+16))
 			})
 		})
 
 		Convey("When it receives a key with single keyscan", func() {
-			c.SendKey(KeyBackspace, false)
+			err := c.SendKey(KeyBackspace, false)
 
 			Convey("It sends the keycode", func() {
+				So(err, ShouldBeNil)
 				So(t.sent, ShouldHaveLength, 1)
 				So(t.sent[0].opcode, ShouldEqual, "key")
 				So(t.sent[0].args, ShouldResemble, []string{strconv.Itoa(KeyBackspace[0]), "0"})
@@ -57,9 +60,10 @@ func TestClient(t *testing.T) {
 		})
 
 		Convey("When it receives a key with multiple keyscans", func() {
-			c.SendKey(KeyRightShift, true)
+			err := c.SendKey(KeyRightShift, true)
 
 			Convey("It sends the keycode", func() {
+				So(err, ShouldBeNil)
 				So(t.sent, ShouldHaveLength, len(KeyRightShift))
 				So(t.sent[0].opcode, ShouldEqual, "key")
 				So(t.sent[0].args, ShouldResemble, []string{strconv.Itoa(KeyRightShift[0]), "1"})
@@ -69,9 +73,10 @@ func TestClient(t *testing.T) {
 		})
 
 		Convey("When it receives a text to be sent", func() {
-			c.SendText("bring")
+			err := c.SendText("bring")
 
 			Convey("It sends all keycodes", func() {
+				So(err, ShouldBeNil)
 				So(t.sent, ShouldHaveLength, 10)
 				So(t.sent[0], ShouldResemble, NewInstruction("key", to_i("b"), "1"))
 				So(t.sent[1], ShouldResemble, NewInstruction("key", to_i("b"), "0"))
@@ -84,9 +89,14 @@ func TestClient(t *testing.T) {
 			s.State = SessionClosed
 
 			Convey("It does not send anything", func() {
-				c.SendKey(KeyEnter, true)
-				c.SendText("abc")
-				c.SendMouse(image.Pt(0, 0), MouseRight)
+				err := c.SendKey(KeyEnter, true)
+				So(err, ShouldResemble, ErrNotConnected)
+
+				err = c.SendText("abc")
+				So(err, ShouldResemble, ErrNotConnected)
+
+				err = c.SendMouse(image.Pt(0, 0), MouseRight)
+				So(err, ShouldResemble, ErrNotConnected)
 
 				So(t.sent, ShouldBeEmpty)
 			})
