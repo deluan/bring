@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	windowTitle   = "Bring it on!"
 	defaultWidth  = 1024
 	defaultHeight = 768
 	guacdAddress  = "localhost:4822"
@@ -52,18 +53,12 @@ func createBringClient(protocol, hostname, port string) *bring.Client {
 	return client
 }
 
-type SampleApp struct {
-	cfg                  pixelgl.WindowConfig
-	win                  *pixelgl.Window
-	mousePreviousButtons []bring.MouseButton
-}
-
-func (app *SampleApp) mainLoop(client *bring.Client) {
+func mainLoop(win *pixelgl.Window, client *bring.Client) {
 	frames := 0
 	second := time.Tick(time.Second)
 	var lastRefresh int64
 
-	for !app.win.Closed() {
+	for !win.Closed() {
 		// Get an updated image from the Bring Client
 		img, lastUpdate := client.Screen()
 
@@ -73,14 +68,14 @@ func (app *SampleApp) mainLoop(client *bring.Client) {
 		// If the image is not empty
 		if imgWidth > 0 && imgHeight > 0 {
 
-			// Process screen updates
+			// Process screen updates if there were any updates in the image
 			if lastRefresh != lastUpdate {
-				app.updateScreen(img)
+				updateScreen(win, img)
 				lastRefresh = lastUpdate
 			}
 
 			// Handle mouse events
-			mouseInfo := app.collectNewMouseInfo(imgWidth, imgHeight)
+			mouseInfo := collectNewMouseInfo(win, imgWidth, imgHeight)
 			if mouseInfo != nil {
 				if err := client.SendMouse(mouseInfo.pos, mouseInfo.pressedButtons...); err != nil {
 					fmt.Printf("Error: %s", err)
@@ -88,7 +83,7 @@ func (app *SampleApp) mainLoop(client *bring.Client) {
 			}
 
 			// Handle keyboard events
-			pressed, released := app.collectKeyStrokes(app.win)
+			pressed, released := collectKeyStrokes(win)
 			for _, k := range pressed {
 				if err := client.SendKey(k, true); err != nil {
 					fmt.Printf("Error: %s", err)
@@ -101,22 +96,23 @@ func (app *SampleApp) mainLoop(client *bring.Client) {
 			}
 		}
 
-		app.win.Update()
+		win.Update()
 
 		// Measure FPS and update title
 		frames++
 		select {
 		case <-second:
-			app.win.SetTitle(fmt.Sprintf("%s | %s | FPS: %d", app.cfg.Title, stateNames[client.State()], frames))
+			win.SetTitle(fmt.Sprintf("%s | %s | FPS: %d", windowTitle, stateNames[client.State()], frames))
 			frames = 0
 		default:
 		}
 	}
 }
 
-func CreateApp() *SampleApp {
+// Create the App's main window
+func createAppWindow() *pixelgl.Window {
 	cfg := pixelgl.WindowConfig{
-		Title:     "Bring it on!",
+		Title:     windowTitle,
 		Bounds:    pixel.R(0, 0, defaultWidth, defaultHeight),
 		VSync:     true,
 		Resizable: true,
@@ -127,10 +123,7 @@ func CreateApp() *SampleApp {
 	}
 	win.Clear(colornames.Skyblue)
 	win.SetCursorVisible(false)
-	return &SampleApp{
-		cfg: cfg,
-		win: win,
-	}
+	return win
 }
 
 // Pixel library requires the main to be run inside pixelgl.Run, to guarantee it is run in the main thread
@@ -140,8 +133,8 @@ func Main() {
 		return
 	}
 	client := createBringClient(os.Args[1], os.Args[2], os.Args[3])
-	app := CreateApp()
-	app.mainLoop(client)
+	win := createAppWindow()
+	mainLoop(win, client)
 }
 
 func main() {

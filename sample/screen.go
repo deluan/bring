@@ -4,11 +4,12 @@ import (
 	"image"
 
 	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/pixelgl"
 )
 
-func (app *SampleApp) updateScreen(img image.Image) {
-	winWidth := app.win.Bounds().Max.X
-	winHeight := app.win.Bounds().Max.Y
+func updateScreen(win *pixelgl.Window, img image.Image) {
+	winWidth := win.Bounds().Max.X
+	winHeight := win.Bounds().Max.Y
 
 	imgWidth := img.Bounds().Dx()
 	imgHeight := img.Bounds().Dy()
@@ -17,12 +18,12 @@ func (app *SampleApp) updateScreen(img image.Image) {
 	scale := pixel.V(winWidth/float64(imgWidth), winHeight/float64(imgHeight))
 	mat := pixel.IM
 	mat = mat.ScaledXY(pixel.ZV, scale)
-	mat = mat.Moved(app.win.Bounds().Center())
+	mat = mat.Moved(win.Bounds().Center())
 
 	// Put image in a sprite
 	pic := pixel.PictureDataFromImage(img)
 	sprite := pixel.NewSprite(pic, pic.Bounds())
 
 	// Renders the sprite in the window, using scaled matrix
-	sprite.Draw(app.win, mat)
+	sprite.Draw(win, mat)
 }

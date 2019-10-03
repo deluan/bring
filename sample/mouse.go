@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"reflect"
 
 	"github.com/deluan/bring"
 	"github.com/faiface/pixel"
@@ -14,19 +13,16 @@ type mouseInfo struct {
 	pressedButtons []bring.MouseButton
 }
 
-func (app *SampleApp) collectNewMouseInfo(imgWidth, imgHeight int) *mouseInfo {
-	newMousePos := app.win.MousePosition()
-	newMouseBtns := pressedMouseButtons(app.win)
+func collectNewMouseInfo(win *pixelgl.Window, imgWidth, imgHeight int) *mouseInfo {
+	newMousePos := win.MousePosition()
+	newMouseBtns := pressedMouseButtons(win)
 
 	// If mouse is inside window boundaries and anything has changed
-	if app.win.MouseInsideWindow() &&
-		(app.win.MousePreviousPosition() != newMousePos ||
-			!reflect.DeepEqual(app.mousePreviousButtons, newMouseBtns)) {
+	if win.MouseInsideWindow() &&
+		(win.MousePreviousPosition() != newMousePos || changeInMouseButtons(win)) {
 
-		app.mousePreviousButtons = newMouseBtns
-
-		winWidth := app.win.Bounds().Max.X
-		winHeight := app.win.Bounds().Max.Y
+		winWidth := win.Bounds().Max.X
+		winHeight := win.Bounds().Max.Y
 
 		// Scale mouse position
 		scale := pixel.V(float64(imgWidth)/winWidth, float64(imgHeight)/winHeight)
@@ -39,6 +35,20 @@ func (app *SampleApp) collectNewMouseInfo(imgWidth, imgHeight int) *mouseInfo {
 		return &mouseInfo{pos, newMouseBtns}
 	}
 	return nil
+}
+
+func changeInMouseButtons(win *pixelgl.Window) bool {
+	btns := []pixelgl.Button{
+		pixelgl.MouseButtonLeft,
+		pixelgl.MouseButtonRight,
+		pixelgl.MouseButtonMiddle,
+	}
+	for _, p := range btns {
+		if win.JustPressed(p) || win.JustReleased(p) {
+			return true
+		}
+	}
+	return false
 }
 
 func pressedMouseButtons(win *pixelgl.Window) []bring.MouseButton {

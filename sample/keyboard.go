@@ -10,7 +10,7 @@ var (
 )
 
 // Rant: why pixelgl keyboard events handling is so messy?!?
-func (app *SampleApp) collectKeyStrokes(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring.KeyCode) {
+func collectKeyStrokes(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring.KeyCode) {
 	for k, v := range keys {
 		key := v
 		if win.JustPressed(k) || win.Repeated(k) {
