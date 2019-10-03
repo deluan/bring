@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -29,7 +27,8 @@ var stateNames = map[bring.SessionState]string{
 	bring.SessionHandshake: "Handshake",
 }
 
-func initBring(protocol, hostname, port string) *bring.Client {
+// Creates and initialize Bring's Session and Client
+func createBringClient(protocol, hostname, port string) *bring.Client {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
 	logger.SetLevel(logrus.DebugLevel)
@@ -53,7 +52,69 @@ func initBring(protocol, hostname, port string) *bring.Client {
 	return client
 }
 
-func run() {
+type SampleApp struct {
+	cfg                  pixelgl.WindowConfig
+	win                  *pixelgl.Window
+	mousePreviousButtons []bring.MouseButton
+}
+
+func (app *SampleApp) mainLoop(client *bring.Client) {
+	frames := 0
+	second := time.Tick(time.Second)
+	var lastRefresh int64
+
+	for !app.win.Closed() {
+		// Get an updated image from the Bring Client
+		img, lastUpdate := client.Screen()
+
+		imgWidth := img.Bounds().Dx()
+		imgHeight := img.Bounds().Dy()
+
+		// If the image is not empty
+		if imgWidth > 0 && imgHeight > 0 {
+
+			// Process screen updates
+			if lastRefresh != lastUpdate {
+				app.updateScreen(img)
+				lastRefresh = lastUpdate
+			}
+
+			// Handle mouse events
+			mouseInfo := app.collectNewMouseInfo(imgWidth, imgHeight)
+			if mouseInfo != nil {
+				if err := client.SendMouse(mouseInfo.pos, mouseInfo.pressedButtons...); err != nil {
+					fmt.Printf("Error: %s", err)
+				}
+			}
+
+			// Handle keyboard events
+			pressed, released := app.collectKeyStrokes(app.win)
+			for _, k := range pressed {
+				if err := client.SendKey(k, true); err != nil {
+					fmt.Printf("Error: %s", err)
+				}
+			}
+			for _, k := range released {
+				if err := client.SendKey(k, false); err != nil {
+					fmt.Printf("Error: %s", err)
+				}
+			}
+		}
+
+		app.win.Update()
+
+		// Measure FPS and update title
+		frames++
+		select {
+		case <-second:
+			app.win.SetTitle(fmt.Sprintf("%s | %s | FPS: %d", app.cfg.Title, stateNames[client.State()], frames))
+			frames = 0
+		default:
+		}
+	}
+}
+
+func CreateApp() *SampleApp {
 	cfg := pixelgl.WindowConfig{
 		Title:     "Bring it on!",
 		Bounds:    pixel.R(0, 0, defaultWidth, defaultHeight),
@@ -64,150 +125,25 @@ func run() {
 	if err != nil {
 		panic(err)
 	}
-	client := initBring(os.Args[1], os.Args[2], os.Args[3])
-
 	win.Clear(colornames.Skyblue)
 	win.SetCursorVisible(false)
-
-	frames := 0
-	second := time.Tick(time.Second)
-	var lastRefresh int64
-
-	var mousePos pixel.Vec
-	var mouseBtns []bring.MouseButton
-	var imgWidth, imgHeight int
-
-	for !win.Closed() {
-		winWidth := win.Bounds().Max.X
-		winHeight := win.Bounds().Max.Y
-		// Process screen updates
-		img, lastUpdate := client.Screen()
-		if lastRefresh != lastUpdate {
-			imgWidth = img.Bounds().Dx()
-			imgHeight = img.Bounds().Dy()
-			if imgWidth > 0 && imgHeight > 0 {
-				pic := pixel.PictureDataFromImage(img)
-				sprite := pixel.NewSprite(pic, pic.Bounds())
-				scale := pixel.V(winWidth/float64(imgWidth), winHeight/float64(imgHeight))
-				mat := pixel.IM
-				mat = mat.ScaledXY(pixel.ZV, scale)
-				mat = mat.Moved(win.Bounds().Center())
-				sprite.Draw(win, mat)
-			}
-			lastRefresh = lastUpdate
-		}
-		win.Update()
-
-		// Handle mouse events
-		newMousePos := win.MousePosition()
-		newMouseBtns := mouseButtons(win)
-		if mouseInWindow(win, newMousePos) &&
-			imgHeight > 0 && imgWidth > 0 &&
-			(mousePos != newMousePos || !reflect.DeepEqual(mouseBtns, newMouseBtns) || changeInMouseButtons(win)) {
-			mousePos = newMousePos
-			mouseBtns = newMouseBtns
-			scale := pixel.V(float64(imgWidth)/winWidth, float64(imgHeight)/winHeight)
-			newMousePos = newMousePos.ScaledXY(scale)
-			y := float64(imgHeight) - newMousePos.Y // OpenGL uses inverted Y
-			pos := image.Pt(int(newMousePos.X), int(y))
-			client.SendMouse(pos, newMouseBtns...)
-		}
-
-		// Handle keyboard events
-		pressed, released := collectKeys(win)
-		for _, k := range pressed {
-			client.SendKey(k, true)
-		}
-		for _, k := range released {
-			client.SendKey(k, false)
-		}
-
-		// Measure FPS
-		frames++
-		select {
-		case <-second:
-			win.SetTitle(fmt.Sprintf("%s | %s | FPS: %d", cfg.Title, stateNames[client.State()], frames))
-			frames = 0
-		default:
-		}
+	return &SampleApp{
+		cfg: cfg,
+		win: win,
 	}
 }
 
-// Rant: why pixelgl keyboard events handling is so messy?!?
-func collectKeys(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring.KeyCode) {
-	for k, v := range keys {
-		key := v
-		if win.JustPressed(k) || win.Repeated(k) {
-			pressed = append(pressed, key)
-		}
-		if win.JustReleased(k) {
-			released = append(released, key)
-		}
-	}
-	controlPressed := win.Pressed(pixelgl.KeyLeftControl) || win.Pressed(pixelgl.KeyRightControl) ||
-		win.Pressed(pixelgl.KeyLeftAlt) || win.Pressed(pixelgl.KeyRightAlt)
-	if controlPressed {
-		shiftPressed := win.Pressed(pixelgl.KeyLeftShift) || win.Pressed(pixelgl.KeyRightShift)
-		for ch := 32; ch < 127; ch++ {
-			isLetter := ch >= int('A') && ch <= int('Z')
-			key := ch
-			if isLetter && !shiftPressed {
-				key = ch + 32
-			}
-			if win.JustPressed(pixelgl.Button(ch)) || win.Repeated(pixelgl.Button(ch)) {
-				pressed = append(pressed, bring.KeyCode(key))
-			}
-			if win.JustReleased(pixelgl.Button(ch)) {
-				released = append(released, bring.KeyCode(key))
-			}
-		}
-	} else {
-		for _, ch := range win.Typed() {
-			pressed = append(pressed, bring.KeyCode(int(ch)))
-			released = append(released, bring.KeyCode(int(ch)))
-		}
-	}
-	return
-}
-
-func changeInMouseButtons(win *pixelgl.Window) bool {
-	btns := []pixelgl.Button{
-		pixelgl.MouseButtonLeft,
-		pixelgl.MouseButtonRight,
-		pixelgl.MouseButtonMiddle,
-	}
-	for _, p := range btns {
-		if win.JustPressed(p) || win.JustReleased(p) {
-			return true
-		}
-	}
-	return false
-}
-
-func mouseButtons(win *pixelgl.Window) []bring.MouseButton {
-	btnMap := map[pixelgl.Button]bring.MouseButton{
-		pixelgl.MouseButtonLeft:   bring.MouseLeft,
-		pixelgl.MouseButtonRight:  bring.MouseRight,
-		pixelgl.MouseButtonMiddle: bring.MouseMiddle,
-	}
-	var btns []bring.MouseButton
-	for p, b := range btnMap {
-		if win.Pressed(p) {
-			btns = append(btns, b)
-		}
-	}
-	return btns
-}
-
-func mouseInWindow(win *pixelgl.Window, mousePos pixel.Vec) bool {
-	return win.Bounds().Contains(mousePos)
-}
-
-func main() {
+// Pixel library requires the main to be run inside pixelgl.Run, to guarantee it is run in the main thread
+func Main() {
 	if len(os.Args) < 4 {
 		println("Usage: app <vnc|rdp> address port")
 		return
 	}
-	initKeys()
-	pixelgl.Run(run)
+	client := createBringClient(os.Args[1], os.Args[2], os.Args[3])
+	app := CreateApp()
+	app.mainLoop(client)
+}
+
+func main() {
+	pixelgl.Run(Main)
 }

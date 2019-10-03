@@ -9,7 +9,44 @@ var (
 	keys map[pixelgl.Button]bring.KeyCode
 )
 
-func initKeys() {
+// Rant: why pixelgl keyboard events handling is so messy?!?
+func (app *SampleApp) collectKeyStrokes(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring.KeyCode) {
+	for k, v := range keys {
+		key := v
+		if win.JustPressed(k) || win.Repeated(k) {
+			pressed = append(pressed, key)
+		}
+		if win.JustReleased(k) {
+			released = append(released, key)
+		}
+	}
+	controlPressed := win.Pressed(pixelgl.KeyLeftControl) || win.Pressed(pixelgl.KeyRightControl) ||
+		win.Pressed(pixelgl.KeyLeftAlt) || win.Pressed(pixelgl.KeyRightAlt)
+	if controlPressed {
+		shiftPressed := win.Pressed(pixelgl.KeyLeftShift) || win.Pressed(pixelgl.KeyRightShift)
+		for ch := 32; ch < 127; ch++ {
+			isLetter := ch >= int('A') && ch <= int('Z')
+			key := ch
+			if isLetter && !shiftPressed {
+				key = ch + 32
+			}
+			if win.JustPressed(pixelgl.Button(ch)) || win.Repeated(pixelgl.Button(ch)) {
+				pressed = append(pressed, bring.KeyCode(key))
+			}
+			if win.JustReleased(pixelgl.Button(ch)) {
+				released = append(released, bring.KeyCode(key))
+			}
+		}
+	} else {
+		for _, ch := range win.Typed() {
+			pressed = append(pressed, bring.KeyCode(int(ch)))
+			released = append(released, bring.KeyCode(int(ch)))
+		}
+	}
+	return
+}
+
+func init() {
 	keys = map[pixelgl.Button]bring.KeyCode{
 		pixelgl.KeyLeftAlt:      bring.KeyLeftAlt,
 		pixelgl.KeyRightAlt:     bring.KeyRightAlt,
