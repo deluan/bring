@@ -2,102 +2,106 @@ package main
 
 import (
 	"github.com/deluan/bring"
-	"github.com/faiface/pixel/pixelgl"
+	"github.com/tfriedel6/canvas/sdlcanvas"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
-var (
-	keys map[pixelgl.Button]bring.KeyCode
-)
-
-// Rant: why pixelgl keyboard events handling is so messy?!?
-func collectKeyStrokes(win *pixelgl.Window) (pressed []bring.KeyCode, released []bring.KeyCode) {
-	for k, v := range keys {
-		key := v
-		if win.JustPressed(k) || win.Repeated(k) {
-			pressed = append(pressed, key)
-		}
-		if win.JustReleased(k) {
-			released = append(released, key)
-		}
-	}
-	controlPressed := win.Pressed(pixelgl.KeyLeftControl) || win.Pressed(pixelgl.KeyRightControl) ||
-		win.Pressed(pixelgl.KeyLeftAlt) || win.Pressed(pixelgl.KeyRightAlt)
-	if controlPressed {
-		shiftPressed := win.Pressed(pixelgl.KeyLeftShift) || win.Pressed(pixelgl.KeyRightShift)
-		for ch := 32; ch < 127; ch++ {
-			isLetter := ch >= int('A') && ch <= int('Z')
-			key := ch
-			if isLetter && !shiftPressed {
-				key = ch + 32
-			}
-			if win.JustPressed(pixelgl.Button(ch)) || win.Repeated(pixelgl.Button(ch)) {
-				pressed = append(pressed, bring.KeyCode(key))
-			}
-			if win.JustReleased(pixelgl.Button(ch)) {
-				released = append(released, bring.KeyCode(key))
-			}
-		}
-	} else {
-		for _, ch := range win.Typed() {
-			pressed = append(pressed, bring.KeyCode(int(ch)))
-			released = append(released, bring.KeyCode(int(ch)))
-		}
-	}
-	return
+type keyboardState struct {
+	client *bring.Client
+	shift  bool
+	caps   bool
 }
 
-func init() {
-	keys = map[pixelgl.Button]bring.KeyCode{
-		pixelgl.KeyLeftAlt:      bring.KeyLeftAlt,
-		pixelgl.KeyRightAlt:     bring.KeyRightAlt,
-		pixelgl.KeyLeftControl:  bring.KeyLeftControl,
-		pixelgl.KeyRightControl: bring.KeyRightControl,
-		pixelgl.KeyLeftShift:    bring.KeyLeftShift,
-		pixelgl.KeyRightShift:   bring.KeyRightShift,
-		pixelgl.KeyBackspace:    bring.KeyBackspace,
-		pixelgl.KeyCapsLock:     bring.KeyCapsLock,
-		pixelgl.KeyDelete:       bring.KeyDelete,
-		pixelgl.KeyDown:         bring.KeyDown,
-		pixelgl.KeyEnd:          bring.KeyEnd,
-		pixelgl.KeyEnter:        bring.KeyEnter,
-		pixelgl.KeyEscape:       bring.KeyEscape,
-		pixelgl.KeyF1:           bring.KeyF1,
-		pixelgl.KeyF2:           bring.KeyF2,
-		pixelgl.KeyF3:           bring.KeyF3,
-		pixelgl.KeyF4:           bring.KeyF4,
-		pixelgl.KeyF5:           bring.KeyF5,
-		pixelgl.KeyF6:           bring.KeyF6,
-		pixelgl.KeyF7:           bring.KeyF7,
-		pixelgl.KeyF8:           bring.KeyF8,
-		pixelgl.KeyF9:           bring.KeyF9,
-		pixelgl.KeyF10:          bring.KeyF10,
-		pixelgl.KeyF11:          bring.KeyF11,
-		pixelgl.KeyF12:          bring.KeyF12,
-		pixelgl.KeyF13:          bring.KeyF13,
-		pixelgl.KeyF14:          bring.KeyF14,
-		pixelgl.KeyF15:          bring.KeyF15,
-		pixelgl.KeyF16:          bring.KeyF16,
-		pixelgl.KeyF17:          bring.KeyF17,
-		pixelgl.KeyF18:          bring.KeyF18,
-		pixelgl.KeyF19:          bring.KeyF19,
-		pixelgl.KeyF20:          bring.KeyF20,
-		pixelgl.KeyF21:          bring.KeyF21,
-		pixelgl.KeyF22:          bring.KeyF22,
-		pixelgl.KeyF23:          bring.KeyF23,
-		pixelgl.KeyF24:          bring.KeyF24,
-		pixelgl.KeyHome:         bring.KeyHome,
-		pixelgl.KeyInsert:       bring.KeyInsert,
-		pixelgl.KeyLeft:         bring.KeyLeft,
-		pixelgl.KeyNumLock:      bring.KeyNumLock,
-		pixelgl.KeyPageDown:     bring.KeyPageDown,
-		pixelgl.KeyPageUp:       bring.KeyPageUp,
-		pixelgl.KeyPause:        bring.KeyPause,
-		pixelgl.KeyPrintScreen:  bring.KeyPrintScreen,
-		pixelgl.KeyRight:        bring.KeyRight,
-		pixelgl.KeyTab:          bring.KeyTab,
-		pixelgl.KeyUp:           bring.KeyUp,
-		// pixelgl.KeyMeta:         bring.KeyMeta,
-		// pixelgl.KeySuper:        bring.KeySuper,
-		// pixelgl.KeyWin:          bring.KeyWin,
+func hookKeyboard(win *sdlcanvas.Window, client *bring.Client) {
+	ks := &keyboardState{client: client}
+	win.KeyUp = ks.keyUp
+	win.KeyDown = ks.keyDown
+}
+
+func (ks *keyboardState) sendKey(key bring.KeyCode, pressed bool) {
+	k := int(key)
+	if k >= int('A') && k <= int('Z') {
+		if !ks.shift && !ks.caps {
+			k = k + 32
+		}
 	}
+	_ = ks.client.SendKey(bring.KeyCode(k), pressed)
+}
+
+func (ks *keyboardState) keyUp(scancode int, rn rune, name string) {
+	if k := mapKey(scancode, rn); k >= 0 {
+		if k == bring.KeyLeftShift || k == bring.KeyRightShift {
+			ks.shift = false
+		}
+		if k == bring.KeyCapsLock {
+			ks.caps = false
+		}
+		ks.sendKey(k, false)
+	}
+}
+
+func (ks *keyboardState) keyDown(scancode int, rn rune, name string) {
+	if k := mapKey(scancode, rn); k >= 0 {
+		if k == bring.KeyLeftShift || k == bring.KeyRightShift {
+			ks.shift = true
+		}
+		if k == bring.KeyCapsLock {
+			ks.caps = true
+		}
+		ks.sendKey(k, true)
+	}
+}
+
+func mapKey(scancode int, rn rune) bring.KeyCode {
+	if k, ok := keyMap[scancode]; ok {
+		return k
+	}
+	if rn != 0 {
+		return bring.KeyCode(rn)
+	}
+	return -1
+}
+
+var keyMap = map[int]bring.KeyCode{
+	sdl.SCANCODE_ESCAPE:     bring.KeyEscape,
+	sdl.SCANCODE_RETURN:     bring.KeyEnter,
+	sdl.SCANCODE_BACKSPACE:  bring.KeyBackspace,
+	sdl.SCANCODE_TAB:        bring.KeyTab,
+	sdl.SCANCODE_LCTRL:      bring.KeyLeftControl,
+	sdl.SCANCODE_LSHIFT:     bring.KeyLeftShift,
+	sdl.SCANCODE_RSHIFT:     bring.KeyRightShift,
+	sdl.SCANCODE_LALT:       bring.KeyLeftAlt,
+	sdl.SCANCODE_CAPSLOCK:   bring.KeyCapsLock,
+	sdl.SCANCODE_F1:         bring.KeyF1,
+	sdl.SCANCODE_F2:         bring.KeyF2,
+	sdl.SCANCODE_F3:         bring.KeyF3,
+	sdl.SCANCODE_F4:         bring.KeyF4,
+	sdl.SCANCODE_F5:         bring.KeyF5,
+	sdl.SCANCODE_F6:         bring.KeyF6,
+	sdl.SCANCODE_F7:         bring.KeyF7,
+	sdl.SCANCODE_F8:         bring.KeyF8,
+	sdl.SCANCODE_F9:         bring.KeyF9,
+	sdl.SCANCODE_F10:        bring.KeyF10,
+	sdl.SCANCODE_PAUSE:      bring.KeyPause,
+	sdl.SCANCODE_SCROLLLOCK: bring.KeyScroll,
+	sdl.SCANCODE_F11:        bring.KeyF11,
+	sdl.SCANCODE_F12:        bring.KeyF12,
+	sdl.SCANCODE_F13:        bring.KeyF13,
+	sdl.SCANCODE_F14:        bring.KeyF14,
+	sdl.SCANCODE_F15:        bring.KeyF15,
+	sdl.SCANCODE_F16:        bring.KeyF16,
+	sdl.SCANCODE_F17:        bring.KeyF17,
+	sdl.SCANCODE_F18:        bring.KeyF18,
+	sdl.SCANCODE_F19:        bring.KeyF19,
+	sdl.SCANCODE_RCTRL:      bring.KeyRightControl,
+	sdl.SCANCODE_RALT:       bring.KeyRightAlt,
+	sdl.SCANCODE_HOME:       bring.KeyHome,
+	sdl.SCANCODE_UP:         bring.KeyUp,
+	sdl.SCANCODE_PAGEUP:     bring.KeyPageUp,
+	sdl.SCANCODE_LEFT:       bring.KeyLeft,
+	sdl.SCANCODE_RIGHT:      bring.KeyRight,
+	sdl.SCANCODE_END:        bring.KeyEnd,
+	sdl.SCANCODE_DOWN:       bring.KeyDown,
+	sdl.SCANCODE_INSERT:     bring.KeyInsert,
+	sdl.SCANCODE_DELETE:     bring.KeyDelete,
 }

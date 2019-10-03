@@ -1,67 +1,63 @@
 package main
 
 import (
+	"fmt"
 	"image"
 
 	"github.com/deluan/bring"
-	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/pixelgl"
+	"github.com/tfriedel6/canvas/sdlcanvas"
 )
 
-type mouseInfo struct {
-	pos            image.Point
-	pressedButtons []bring.MouseButton
+type mouseState struct {
+	client  *bring.Client
+	buttons map[int]bool
+	x, y    int
 }
 
-func collectNewMouseInfo(win *pixelgl.Window, imgWidth, imgHeight int) *mouseInfo {
-	newMousePos := win.MousePosition()
-	newMouseBtns := pressedMouseButtons(win)
-
-	// If mouse is inside window boundaries and anything has changed
-	if win.MouseInsideWindow() &&
-		(win.MousePreviousPosition() != newMousePos || changeInMouseButtons(win)) {
-
-		winWidth := win.Bounds().Max.X
-		winHeight := win.Bounds().Max.Y
-
-		// Scale mouse position
-		scale := pixel.V(float64(imgWidth)/winWidth, float64(imgHeight)/winHeight)
-		newMousePos = newMousePos.ScaledXY(scale)
-
-		// OpenGL uses inverted Y
-		y := float64(imgHeight) - newMousePos.Y
-
-		pos := image.Pt(int(newMousePos.X), int(y))
-		return &mouseInfo{pos, newMouseBtns}
-	}
-	return nil
+var mouseBtnMap = map[int]bring.MouseButton{
+	1: bring.MouseLeft,
+	2: bring.MouseMiddle,
+	3: bring.MouseRight,
 }
 
-func changeInMouseButtons(win *pixelgl.Window) bool {
-	btns := []pixelgl.Button{
-		pixelgl.MouseButtonLeft,
-		pixelgl.MouseButtonRight,
-		pixelgl.MouseButtonMiddle,
-	}
-	for _, p := range btns {
-		if win.JustPressed(p) || win.JustReleased(p) {
-			return true
+func hookMouse(win *sdlcanvas.Window, client *bring.Client) {
+	ms := &mouseState{client: client, buttons: make(map[int]bool)}
+	win.MouseMove = ms.mouseMove
+	win.MouseDown = ms.mouseDown
+	win.MouseUp = ms.mouseUp
+}
+
+func (ms *mouseState) pressedButtons() []bring.MouseButton {
+	var buttons []bring.MouseButton
+	for b, pressed := range ms.buttons {
+		bb := mouseBtnMap[b]
+		if pressed {
+			buttons = append(buttons, bb)
 		}
 	}
-	return false
+	return buttons
 }
 
-func pressedMouseButtons(win *pixelgl.Window) []bring.MouseButton {
-	btnMap := map[pixelgl.Button]bring.MouseButton{
-		pixelgl.MouseButtonLeft:   bring.MouseLeft,
-		pixelgl.MouseButtonRight:  bring.MouseRight,
-		pixelgl.MouseButtonMiddle: bring.MouseMiddle,
+func (ms *mouseState) sendMouse(x, y int) {
+	ms.x, ms.y = x, y
+	if err := ms.client.SendMouse(image.Pt(x, y), ms.pressedButtons()...); err != nil {
+		fmt.Printf("Error: %s\n", err)
 	}
-	var btns []bring.MouseButton
-	for p, b := range btnMap {
-		if win.Pressed(p) {
-			btns = append(btns, b)
-		}
+}
+
+func (ms *mouseState) mouseDown(button, x, y int) {
+	ms.buttons[button] = true
+	ms.sendMouse(x, y)
+}
+
+func (ms *mouseState) mouseUp(button, x, y int) {
+	ms.buttons[button] = false
+	ms.sendMouse(x, y)
+}
+
+func (ms *mouseState) mouseMove(x, y int) {
+	if ms.x == x && ms.y == y {
+		return
 	}
-	return btns
+	ms.sendMouse(x, y)
 }
