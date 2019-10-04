@@ -33,7 +33,7 @@ coverage:
 
 .PHONY: test
 doc:
-	@echo "Doc server address: http://localhost:6060/plg"
+	@echo "Doc server address: http://localhost:6060/pkg"
 	godoc -http=:6060
 
 .PHONY: release
