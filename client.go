@@ -113,7 +113,7 @@ func (c *Client) SendKey(key KeyCode, pressed bool) error {
 		return ErrNotConnected
 	}
 
-	var p string = "0"
+	p := "0"
 	if pressed {
 		p = "1"
 	}

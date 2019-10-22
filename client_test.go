@@ -91,10 +91,10 @@ func TestClient(t *testing.T) {
 			Convey("It sends all keycodes", func() {
 				So(err, ShouldBeNil)
 				So(t.sent, ShouldHaveLength, 10)
-				So(t.sent[0], ShouldResemble, protocol.NewInstruction("key", to_i("b"), "1"))
-				So(t.sent[1], ShouldResemble, protocol.NewInstruction("key", to_i("b"), "0"))
-				So(t.sent[2], ShouldResemble, protocol.NewInstruction("key", to_i("r"), "1"))
-				So(t.sent[3], ShouldResemble, protocol.NewInstruction("key", to_i("r"), "0"))
+				So(t.sent[0], ShouldResemble, protocol.NewInstruction("key", toAscii("b"), "1"))
+				So(t.sent[1], ShouldResemble, protocol.NewInstruction("key", toAscii("b"), "0"))
+				So(t.sent[2], ShouldResemble, protocol.NewInstruction("key", toAscii("r"), "1"))
+				So(t.sent[3], ShouldResemble, protocol.NewInstruction("key", toAscii("r"), "0"))
 			})
 		})
 
@@ -117,7 +117,7 @@ func TestClient(t *testing.T) {
 	})
 }
 
-func to_i(c string) string {
+func toAscii(c string) string {
 	return strconv.Itoa(int(c[0]))
 }
 
