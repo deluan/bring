@@ -115,10 +115,7 @@ var handlers = map[string]handlerFunc{
 	},
 
 	"sync": func(c *Client, args []string) error {
-		err := c.display.flush()
-		if err != nil {
-			c.logger.Errorf("Error flushing tasks: %s", err)
-		}
+		c.display.flush()
 		if err := c.session.Send(protocol.NewInstruction("sync", args...)); err != nil {
 			c.logger.Errorf("Failed to send 'sync' back to server: %s", err)
 			return err

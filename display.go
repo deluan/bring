@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,13 +21,11 @@ type display struct {
 	cursorHotspotY int
 	cursorX        int
 	cursorY        int
-	tasks          chan task
-	pendingTasks   sync.WaitGroup
+	tasks          []task
 	layers         layers
 	defaultLayer   *layer
 	canvas         *image.RGBA
 	lastUpdate     int64
-	canvasAccess   sync.RWMutex
 }
 
 func newDisplay(logger Logger) *display {
@@ -37,10 +34,8 @@ func newDisplay(logger Logger) *display {
 		cursor: newBuffer(),
 		layers: newLayers(),
 		canvas: image.NewRGBA(image.Rectangle{}),
-		tasks:  make(chan task, 10),
 	}
 	d.defaultLayer = d.layers.getDefault()
-	go d.processTasks()
 	return d
 }
 
@@ -63,17 +58,11 @@ func (d *display) scheduleTask(name string, t taskFunc) {
 		uuid:     uuid.New(),
 	}
 	d.logger.Tracef("Adding new task: %s. Total: %d", task.String(), len(d.tasks)+1)
-	d.pendingTasks.Add(1)
-	d.tasks <- task
+	d.tasks = append(d.tasks, task)
 }
 
 func (d *display) processSingleTask(t task) {
-	d.canvasAccess.Lock()
 	d.logger.Tracef("Executing task %s", t.String())
-	defer func() {
-		d.pendingTasks.Done()
-		d.canvasAccess.Unlock()
-	}()
 	err := t.taskFunc()
 	if err != nil {
 		d.logger.Errorf("Skipping task %s due to error. This can lead to invalid screen state! Error: %s", t.String(), err)
@@ -82,7 +71,7 @@ func (d *display) processSingleTask(t task) {
 	if !d.defaultLayer.modified {
 		return
 	}
-	// TODO Only update canvas when flush
+	// TODO Only update canvas after all tasks are applied?
 	mr := d.defaultLayer.modifiedRect
 	copyImage(d.canvas, mr.Min.X, mr.Min.Y, d.defaultLayer.image, mr, draw.Src)
 	d.lastUpdate = time.Now().UnixNano()
@@ -90,28 +79,19 @@ func (d *display) processSingleTask(t task) {
 	d.defaultLayer.resetModified()
 }
 
-func (d *display) processTasks() {
-	for {
-		select {
-		case t := <-d.tasks:
-			d.processSingleTask(t)
-		}
+func (d *display) flush() {
+	if len(d.tasks) == 0 {
+		return
 	}
-}
-
-func (d *display) flush() error {
-	id := uuid.New()
-	d.logger.Tracef("Waiting for %d pending tasks [%s]", len(d.tasks), id.String())
-	d.pendingTasks.Wait()
-	d.logger.Tracef("All tasks completed [%s]", id.String())
-	return nil
+	d.logger.Tracef("Processing %d pending tasks", len(d.tasks))
+	for _, t := range d.tasks {
+		d.processSingleTask(t)
+	}
+	d.logger.Tracef("All pending tasks were completed")
+	d.tasks = nil
 }
 
 func (d *display) getCanvas() (image.Image, int64) {
-	d.canvasAccess.RLock()
-	defer func() {
-		d.canvasAccess.RUnlock()
-	}()
 	return d.canvas, d.lastUpdate
 }
 
@@ -180,8 +160,6 @@ func (d *display) hideCursor() {
 }
 
 func (d *display) moveCursor(x, y int) {
-	d.canvasAccess.Lock()
-	defer d.canvasAccess.Unlock()
 	d.hideCursor()
 
 	d.cursorX = x
