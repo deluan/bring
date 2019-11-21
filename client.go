@@ -12,9 +12,8 @@ var ErrInvalidKeyCode = errors.New("invalid key code")
 
 type OnSyncFunc = func(image image.Image, lastUpdate int64)
 
-// Guacamole protocol client. Given a Session, automatically handles incoming
-// and outgoing Guacamole instructions via the provided session, updating its
-// display using one or more graphic primitives.
+// Guacamole protocol client. Automatically handles incoming and outgoing Guacamole instructions,
+// updating its display using one or more graphic primitives.
 type Client struct {
 	session *session
 	display *display
@@ -23,7 +22,7 @@ type Client struct {
 	onSync  OnSyncFunc
 }
 
-// Creates a new Client with the provided Session and Logger
+// NewClient creates a Client and connects it to the guacd server with the provided configuration. Logger is optional
 func NewClient(addr string, remoteProtocol string, config map[string]string, logger ...Logger) (*Client, error) {
 	var log Logger
 	if len(logger) > 0 {
