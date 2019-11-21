@@ -10,6 +10,8 @@ import (
 
 var ErrInvalidKeyCode = errors.New("invalid key code")
 
+type OnSyncFunc = func(image image.Image, lastUpdate int64)
+
 // Guacamole protocol client. Given a Session, automatically handles incoming
 // and outgoing Guacamole instructions via the provided session, updating its
 // display using one or more graphic primitives.
@@ -18,6 +20,7 @@ type Client struct {
 	display *display
 	streams streams
 	logger  Logger
+	onSync  OnSyncFunc
 }
 
 // Creates a new Client with the provided Session and Logger
@@ -55,6 +58,10 @@ func (c *Client) Start() {
 			}
 		}
 	}
+}
+
+func (c *Client) OnSync(f OnSyncFunc) {
+	c.onSync = f
 }
 
 // Returns a snapshot of the current screen, together with the last updated timestamp

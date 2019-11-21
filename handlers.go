@@ -120,6 +120,10 @@ var handlers = map[string]handlerFunc{
 			c.logger.Errorf("Failed to send 'sync' back to server: %s", err)
 			return err
 		}
+		if c.onSync != nil {
+			img, ts := c.display.getCanvas()
+			c.onSync(img, ts)
+		}
 		return nil
 	},
 }
