@@ -15,7 +15,7 @@ func TestSession(t *testing.T) {
 			},
 		}
 		addr := server.start()
-		s, _ := NewSession(addr, "rdp", map[string]string{
+		s, _ := newSession(addr, "rdp", map[string]string{
 			"hostname": "host1",
 			"port":     "port1",
 			"password": "password123",

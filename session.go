@@ -23,7 +23,7 @@ const pingFrequency = 5 * time.Second
 // Session is used to create and keep a connection with a guacd server,
 // and it is responsible for the initial handshake and to send and receive instructions.
 // Instructions received are put in the In channel. Instructions are sent using the Send() function
-type Session struct {
+type session struct {
 	In    chan *protocol.Instruction
 	State SessionState
 	Id    string
@@ -35,15 +35,8 @@ type Session struct {
 	protocol string
 }
 
-// NewSession creates a new connection with the guacd server, using the configuration provided
-func NewSession(addr string, remoteProtocol string, config map[string]string, logger ...Logger) (*Session, error) {
-	var log Logger
-	if len(logger) > 0 {
-		log = logger[0]
-	} else {
-		log = &DefaultLogger{}
-	}
-
+// newSession creates a new connection with the guacd server, using the configuration provided
+func newSession(addr string, remoteProtocol string, config map[string]string, logger Logger) (*session, error) {
 	t, err := protocol.NewInetSocketTunnel(addr)
 	if err != nil {
 		return nil, err
@@ -51,15 +44,15 @@ func NewSession(addr string, remoteProtocol string, config map[string]string, lo
 
 	err = t.Connect("")
 	if err != nil {
-		log.Errorf("Error connecting to '%s': %s", addr, err)
+		logger.Errorf("Error connecting to '%s': %s", addr, err)
 		return nil, err
 	}
 
-	s := &Session{
+	s := &session{
 		In:       make(chan *protocol.Instruction, 100),
 		State:    SessionClosed,
 		done:     make(chan bool),
-		logger:   log,
+		logger:   logger,
 		tunnel:   t,
 		config:   config,
 		protocol: remoteProtocol,
@@ -79,7 +72,7 @@ func NewSession(addr string, remoteProtocol string, config map[string]string, lo
 }
 
 // Terminate the current session, disconnecting from the server
-func (s *Session) Terminate() {
+func (s *session) Terminate() {
 	if s.State == SessionClosed {
 		return
 	}
@@ -90,14 +83,14 @@ func (s *Session) Terminate() {
 }
 
 // Send instructions to the server. Multiple instructions are sent in one single transaction
-func (s *Session) Send(ins ...*protocol.Instruction) error {
+func (s *session) Send(ins ...*protocol.Instruction) error {
 	for _, i := range ins {
 		s.logger.Debugf("C> %s", i)
 	}
 	return s.tunnel.SendInstruction(ins...)
 }
 
-func (s *Session) startKeepAlive() {
+func (s *session) startKeepAlive() {
 	go func() {
 		ping := time.NewTicker(pingFrequency)
 		defer ping.Stop()
@@ -115,7 +108,7 @@ func (s *Session) startKeepAlive() {
 	}()
 }
 
-func (s *Session) startReader() {
+func (s *session) startReader() {
 	go func() {
 		for {
 			ins, err := s.tunnel.ReceiveInstruction()
@@ -153,7 +146,7 @@ func (s *Session) startReader() {
 	}()
 }
 
-func (s *Session) handShake(argsIns *protocol.Instruction) {
+func (s *session) handShake(argsIns *protocol.Instruction) {
 	options := []*protocol.Instruction{
 		protocol.NewInstruction("size", "1024", "768", "96"),
 		protocol.NewInstruction("audio", ""),

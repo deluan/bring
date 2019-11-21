@@ -16,7 +16,7 @@ type OnSyncFunc = func(image image.Image, lastUpdate int64)
 // and outgoing Guacamole instructions via the provided session, updating its
 // display using one or more graphic primitives.
 type Client struct {
-	session *Session
+	session *session
 	display *display
 	streams streams
 	logger  Logger
@@ -24,7 +24,7 @@ type Client struct {
 }
 
 // Creates a new Client with the provided Session and Logger
-func NewClient(session *Session, logger ...Logger) (*Client, error) {
+func NewClient(addr string, remoteProtocol string, config map[string]string, logger ...Logger) (*Client, error) {
 	var log Logger
 	if len(logger) > 0 {
 		log = logger[0]
@@ -32,8 +32,13 @@ func NewClient(session *Session, logger ...Logger) (*Client, error) {
 		log = &DefaultLogger{}
 	}
 
+	s, err := newSession(addr, remoteProtocol, config, log)
+	if err != nil {
+		return nil, err
+	}
+
 	c := &Client{
-		session: session,
+		session: s,
 		display: newDisplay(log),
 		streams: newStreams(),
 		logger:  log,

@@ -34,7 +34,7 @@ func createBringClient(protocol, hostname, port string) *bring.Client {
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, ForceColors: true})
 	logger.SetLevel(logrus.DebugLevel)
 
-	session, err := bring.NewSession(guacdAddress, protocol, map[string]string{
+	client, err := bring.NewClient(guacdAddress, protocol, map[string]string{
 		"hostname": hostname,
 		"port":     port,
 		"password": "vncpassword",
@@ -45,10 +45,6 @@ func createBringClient(protocol, hostname, port string) *bring.Client {
 		panic(err)
 	}
 
-	client, err := bring.NewClient(session, logger)
-	if err != nil {
-		panic(err)
-	}
 	go client.Start()
 	return client
 }

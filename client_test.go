@@ -13,15 +13,21 @@ import (
 func TestClient(t *testing.T) {
 	Convey("Given a Client with an active session", t, func() {
 		t := &mockTunnel{}
-		s := &Session{
+		l := &DefaultLogger{Quiet: true}
+		s := &session{
 			In:       make(chan *protocol.Instruction, 100),
 			State:    SessionActive,
 			done:     make(chan bool),
-			logger:   &DefaultLogger{Quiet: true},
+			logger:   l,
 			tunnel:   t,
 			protocol: "vnc",
 		}
-		c, _ := NewClient(s, &DefaultLogger{Quiet: true})
+		c := &Client{
+			session: s,
+			display: newDisplay(l),
+			streams: newStreams(),
+			logger:  l,
+		}
 
 		Convey("It exposes the session state", func() {
 			s.State = SessionHandshake
