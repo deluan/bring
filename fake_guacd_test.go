@@ -2,8 +2,6 @@ package bring
 
 import (
 	"net"
-	"testing"
-	"time"
 
 	"github.com/deluan/bring/protocol"
 )
@@ -56,23 +54,5 @@ func (s *fakeServer) handleRequest(conn net.Conn) {
 	_, err := io.Write(protocol.NewInstruction(disconnectOpcode))
 	if err != nil {
 		panic(err)
-	}
-}
-
-func waitForHandshake(t *testing.T, s *session) {
-	// Wait the end of the Handshake for 2 seconds
-	for i := 0; i < 20; i++ {
-		if s.State == SessionActive {
-			return
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	t.Fatalf("TimeOut waiting for handshake. Session= %+v", s)
-}
-
-func disconnectFromFakeServer(t *testing.T, s *session) {
-	err := s.Send(protocol.NewInstruction(disconnectOpcode))
-	if err != nil {
-		t.Fatalf("Error trying to disconnect from fake server: %s", err)
 	}
 }

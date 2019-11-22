@@ -13,11 +13,11 @@ qemu:
 
 .PHONY: watch
 watch:
-	goconvey -cover -excludedDirs testdata .
+	ginkgo watch -notify ./...
 
 .PHONY: test
 test:
-	go test -v -coverpkg ./...
+	ginkgo -cover ./... -v
 
 .PHONY: bench
 bench:
@@ -26,7 +26,7 @@ bench:
 .PHONY: coverage
 coverage:
 	mkdir -p reports
-	go test -coverprofile=reports/coverage.out -v -coverpkg ./...
+	go test -coverprofile=reports/coverage.out -v -coverpkg ./... ./...
 	go tool cover -func=reports/coverage.out
 	go tool cover -html=reports/coverage.out -o reports/index.html
 	open reports/index.html

@@ -4,17 +4,21 @@ import (
 	"image"
 	"math"
 	"strconv"
-	"testing"
 
 	"github.com/deluan/bring/protocol"
-	. "github.com/smartystreets/goconvey/convey"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-func TestClient(t *testing.T) {
-	Convey("Given a Client with an active session", t, func() {
-		t := &mockTunnel{}
+var _ = Describe("Client", func() {
+	var s *session
+	var c *Client
+	var t *mockTunnel
+
+	BeforeEach(func() {
+		t = &mockTunnel{}
 		l := &DefaultLogger{Quiet: true}
-		s := &session{
+		s = &session{
 			In:       make(chan *protocol.Instruction, 100),
 			State:    SessionActive,
 			done:     make(chan bool),
@@ -22,109 +26,98 @@ func TestClient(t *testing.T) {
 			tunnel:   t,
 			protocol: "vnc",
 		}
-		c := &Client{
+		c = &Client{
 			session: s,
 			display: newDisplay(l),
 			streams: newStreams(),
 			logger:  l,
 		}
+	})
 
-		Convey("It exposes the session state", func() {
+	Context("Active session", func() {
+		It("exposes the session state", func() {
 			s.State = SessionHandshake
-			So(c.State(), ShouldEqual, SessionHandshake)
+			Expect(c.State()).To(Equal(SessionHandshake))
 			s.State = SessionClosed
-			So(c.State(), ShouldEqual, SessionClosed)
+			Expect(c.State()).To(Equal(SessionClosed))
 		})
 
-		Convey("When it receives a mouse position", func() {
+		It("sends the mouse position to the remote server", func() {
 			err := c.SendMouse(image.Pt(10, 20))
+			Expect(err).To(BeNil())
 
-			Convey("It sends the position to the tunnel", func() {
-				So(err, ShouldBeNil)
-				So(t.sent[0].Opcode, ShouldEqual, "mouse")
-				So(t.sent[0].Args, ShouldResemble, []string{"10", "20", "0"})
-			})
+			Expect(t.sent[0].Opcode).To(Equal("mouse"))
+			Expect(t.sent[0].Args).To(Equal([]string{"10", "20", "0"}))
 		})
 
-		Convey("When it receives mouse buttons", func() {
+		It("sends the position to the remote server", func() {
 			err := c.SendMouse(image.Pt(10, 20), MouseLeft, MouseDown)
+			Expect(err).To(BeNil())
 
-			Convey("It sends the position to the tunnel", func() {
-				So(err, ShouldBeNil)
-				So(t.sent[0].Opcode, ShouldEqual, "mouse")
-				So(t.sent[0].Args[2], ShouldEqual, strconv.Itoa(1+16))
-			})
+			Expect(t.sent[0].Opcode).To(Equal("mouse"))
+			Expect(t.sent[0].Args[2]).To(Equal(strconv.Itoa(1 + 16)))
 		})
 
-		Convey("When it receives a key with single keyscan", func() {
+		It("sends a single keyscan to the remote server", func() {
 			err := c.SendKey(KeyBackspace, false)
 			keyBackspace := keySyms[KeyBackspace]
 
-			Convey("It sends the keycode", func() {
-				So(err, ShouldBeNil)
-				So(t.sent, ShouldHaveLength, 1)
-				So(t.sent[0].Opcode, ShouldEqual, "key")
-				So(t.sent[0].Args, ShouldResemble, []string{strconv.Itoa(keyBackspace[0]), "0"})
-			})
+			Expect(err).To(BeNil())
+			Expect(t.sent).To(HaveLen(len(keyBackspace)))
+			Expect(t.sent[0].Opcode).To(Equal("key"))
+			Expect(t.sent[0].Args).To(Equal([]string{strconv.Itoa(keyBackspace[0]), "0"}))
 		})
 
-		Convey("When it receives a key with multiple keyscans", func() {
+		It("sends a key with multiple keyscans to the remote server", func() {
 			err := c.SendKey(KeyRightShift, true)
-			keyRightShift := keySyms[KeyRightShift]
+			KeyRightShift := keySyms[KeyRightShift]
 
-			Convey("It sends the keycode", func() {
-				So(err, ShouldBeNil)
-				So(t.sent, ShouldHaveLength, len(keyRightShift))
-				So(t.sent[0].Opcode, ShouldEqual, "key")
-				So(t.sent[0].Args, ShouldResemble, []string{strconv.Itoa(keyRightShift[0]), "1"})
-				So(t.sent[1].Opcode, ShouldEqual, "key")
-				So(t.sent[1].Args, ShouldResemble, []string{strconv.Itoa(keyRightShift[1]), "1"})
-			})
+			Expect(err).To(BeNil())
+			Expect(t.sent).To(HaveLen(len(KeyRightShift)))
+			Expect(t.sent[0].Opcode).To(Equal("key"))
+			Expect(t.sent[0].Args).To(Equal([]string{strconv.Itoa(KeyRightShift[0]), "1"}))
+			Expect(t.sent[1].Opcode).To(Equal("key"))
+			Expect(t.sent[1].Args).To(Equal([]string{strconv.Itoa(KeyRightShift[1]), "1"}))
 		})
 
-		Convey("When it receives an invalid KeyCode", func() {
+		It("returns an ErrInvalidKeyCode when receiving an invalid keycode", func() {
 			err := c.SendKey(KeyCode(math.MaxInt32), true)
 
-			Convey("It returns ErrInvalidKeyCode", func() {
-				So(err, ShouldResemble, ErrInvalidKeyCode)
-				So(t.sent, ShouldHaveLength, 0)
-			})
+			Expect(err).To(Equal(ErrInvalidKeyCode))
+			Expect(t.sent).To(BeEmpty())
 		})
 
-		Convey("When it receives a text to be sent", func() {
+		It("sends a text as individual keystrokes", func() {
 			err := c.SendText("bring")
-
-			Convey("It sends all keycodes", func() {
-				So(err, ShouldBeNil)
-				So(t.sent, ShouldHaveLength, 10)
-				So(t.sent[0], ShouldResemble, protocol.NewInstruction("key", toAscii("b"), "1"))
-				So(t.sent[1], ShouldResemble, protocol.NewInstruction("key", toAscii("b"), "0"))
-				So(t.sent[2], ShouldResemble, protocol.NewInstruction("key", toAscii("r"), "1"))
-				So(t.sent[3], ShouldResemble, protocol.NewInstruction("key", toAscii("r"), "0"))
-			})
-		})
-
-		Convey("When it is disconnected", func() {
-			s.State = SessionClosed
-
-			Convey("It does not send anything", func() {
-				err := c.SendKey(KeyEnter, true)
-				So(err, ShouldResemble, ErrNotConnected)
-
-				err = c.SendText("abc")
-				So(err, ShouldResemble, ErrNotConnected)
-
-				err = c.SendMouse(image.Pt(0, 0), MouseRight)
-				So(err, ShouldResemble, ErrNotConnected)
-
-				So(t.sent, ShouldBeEmpty)
-			})
+			Expect(err).To(BeNil())
+			Expect(t.sent).To(HaveLen(10))
+			for i, c := range "bring" {
+				Expect(t.sent[i*2]).To(Equal(protocol.NewInstruction("key", toAscii(c), "1")))
+				Expect(t.sent[i*2+1]).To(Equal(protocol.NewInstruction("key", toAscii(c), "0")))
+			}
 		})
 	})
-}
 
-func toAscii(c string) string {
-	return strconv.Itoa(int(c[0]))
+	Context("Session is disconnected", func() {
+		BeforeEach(func() {
+			s.State = SessionClosed
+		})
+
+		It("does not send anything", func() {
+			err := c.SendKey(KeyEnter, true)
+			Expect(err).To(Equal(ErrNotConnected))
+
+			err = c.SendText("abc")
+			Expect(err).To(Equal(ErrNotConnected))
+
+			err = c.SendMouse(image.Pt(0, 0), MouseRight)
+			Expect(err).To(Equal(ErrNotConnected))
+		})
+	})
+})
+
+func toAscii(c int32) string {
+	return strconv.Itoa(int(c))
 }
 
 type mockTunnel struct {
