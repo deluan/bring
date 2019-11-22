@@ -17,7 +17,7 @@ watch:
 
 .PHONY: test
 test:
-	ginkgo -cover ./... -v
+	ginkgo -coverprofile=reports/coverage.out ./... -v
 
 .PHONY: bench
 bench:
