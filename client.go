@@ -10,6 +10,8 @@ import (
 
 var ErrInvalidKeyCode = errors.New("invalid key code")
 
+// OnSyncFunc is the signature for OnSync event handlers. It will receive the current screen image and the
+// timestamp of the last update.
 type OnSyncFunc = func(image image.Image, lastUpdate int64)
 
 // Guacamole protocol client. Automatically handles incoming and outgoing Guacamole instructions,
@@ -64,6 +66,11 @@ func (c *Client) Start() {
 	}
 }
 
+// OnSync sets a function that will be called on every sync instruction received. This event
+// usually happens after a batch of updates are received from the guacd server, making it a
+// perfect way to get the current screenshot without having to poll with Screen().
+// The handler is expected to be called frequently, so avoid adding any blocking behaviour.
+// If your handler is slow, consider using a concurrent pattern (using goroutines)
 func (c *Client) OnSync(f OnSyncFunc) {
 	c.onSync = f
 }
