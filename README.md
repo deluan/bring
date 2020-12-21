@@ -24,7 +24,7 @@ See the [sample app](sample/main.go) for a working example
 
 ## Documentation
 
-The API is provided by the the [Client](https://godoc.org/github.com/deluan/bring#Client) struct. 
+The API is provided by the [Client](https://godoc.org/github.com/deluan/bring#Client) struct. 
 The [documentation](https://godoc.org/github.com/deluan/bring) is a work in progress, 
 but the API is very simple and you can take a look at all features available in the 
 [sample app](sample) provided. Here are the steps to run the app:
