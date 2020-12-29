@@ -131,20 +131,20 @@ func (c *Client) SendKey(key KeyCode, pressed bool) error {
 		return ErrNotConnected
 	}
 
-	p := "0"
-	if pressed {
-		p = "1"
-	}
 	keySym, ok := keySyms[key]
 	if !ok {
 		return ErrInvalidKeyCode
 	}
+
+	p := "0"
+	if pressed {
+		p = "1"
+	}
+
+	var instructions []*protocol.Instruction
 	for _, k := range keySym {
 		keycode := strconv.Itoa(k)
-		err := c.session.Send(protocol.NewInstruction("key", keycode, p))
-		if err != nil {
-			return nil
-		}
+		instructions = append(instructions, protocol.NewInstruction("key", keycode, p))
 	}
-	return nil
+	return c.session.Send(instructions...)
 }
