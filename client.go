@@ -8,14 +8,16 @@ import (
 	"github.com/deluan/bring/protocol"
 )
 
+// ErrInvalidKeyCode is returned by SendKey if an invalid code is passed
 var ErrInvalidKeyCode = errors.New("invalid key code")
 
 // OnSyncFunc is the signature for OnSync event handlers. It will receive the current screen image and the
 // timestamp of the last update.
 type OnSyncFunc = func(image image.Image, lastUpdate int64)
 
-// Guacamole protocol client. Automatically handles incoming and outgoing Guacamole instructions,
-// updating its display using one or more graphic primitives.
+// Client is the main struct in this library, it represents the Guacamole protocol client.
+// Automatically handles incoming and outgoing Guacamole instructions, updating its display
+// using one or more graphic primitives.
 type Client struct {
 	session *session
 	display *display
@@ -47,8 +49,8 @@ func NewClient(addr string, remoteProtocol string, config map[string]string, log
 	return c, nil
 }
 
-// Starts the Client's main loop. It is a blocking call, so it
-// should be called in its on go routine
+// Start the Client's main loop. It is a blocking call, so it
+// should be called in its on goroutine
 func (c *Client) Start() {
 	for {
 		select {
@@ -75,17 +77,17 @@ func (c *Client) OnSync(f OnSyncFunc) {
 	c.onSync = f
 }
 
-// Returns a snapshot of the current screen, together with the last updated timestamp
+// Screen returns a snapshot of the current screen, together with the last updated timestamp
 func (c *Client) Screen() (image image.Image, lastUpdate int64) {
 	return c.display.getCanvas()
 }
 
-// Returns the current session state
+// State returns the current session state
 func (c *Client) State() SessionState {
 	return c.session.State
 }
 
-// Send mouse events to the server. An event is composed by position of the
+// SendMouse sends mouse events to the server. An event is composed by position of the
 // cursor, and a list of any currently pressed MouseButtons
 func (c *Client) SendMouse(p image.Point, pressedButtons ...MouseButton) error {
 	if c.session.State != SessionActive {
@@ -104,7 +106,7 @@ func (c *Client) SendMouse(p image.Point, pressedButtons ...MouseButton) error {
 	return nil
 }
 
-// Send the sequence of characters as they were typed. Only works with simple chars
+// SendText sends the sequence of characters as they were typed. Only works with simple chars
 // (no combination with control keys)
 func (c *Client) SendText(sequence string) error {
 	if c.session.State != SessionActive {
@@ -125,7 +127,7 @@ func (c *Client) SendText(sequence string) error {
 	return nil
 }
 
-// Send key presses and releases.
+// SendKey sends key presses and releases.
 func (c *Client) SendKey(key KeyCode, pressed bool) error {
 	if c.session.State != SessionActive {
 		return ErrNotConnected
