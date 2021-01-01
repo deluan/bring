@@ -113,7 +113,11 @@ func (d *display) copy(srcL, srcX, srcY, srcWidth, srcHeight, dstL, dstX, dstY i
 }
 
 func (d *display) draw(layerIdx, x, y int, compositeOperation byte, s *stream) {
-	op := compositeOperations[compositeOperation]
+	op, ok := compositeOperations[compositeOperation]
+	if !ok {
+		d.logger.Warnf("Composite Operation not supported: %x", compositeOperation)
+		op = draw.Over
+	}
 	img, err := s.image()
 
 	d.scheduleTask("draw", func() error {
