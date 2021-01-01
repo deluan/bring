@@ -2,6 +2,9 @@ package bring
 
 import (
 	"errors"
+	_ "golang.org/x/image/webp"
+	_ "image/jpeg"
+	_ "image/png"
 	"strings"
 	"time"
 
@@ -14,6 +17,11 @@ const (
 	SessionClosed SessionState = iota
 	SessionHandshake
 	SessionActive
+)
+
+const (
+	defaultWidth  = "1024"
+	defaultHeight = "768"
 )
 
 var ErrNotConnected = errors.New("not connected")
@@ -118,7 +126,7 @@ func (s *session) startReader() {
 				break
 			}
 			if ins.Opcode == "blob" {
-				s.logger.Tracef("S> %s", ins)
+				s.logger.Debugf("S> 4.blob: %d", len(ins.Args[1]))
 			} else {
 				s.logger.Debugf("S> %s", ins)
 			}
@@ -147,11 +155,19 @@ func (s *session) startReader() {
 }
 
 func (s *session) handShake(argsIns *protocol.Instruction) {
+	width := s.config["width"]
+	if width == "" {
+		width = defaultWidth
+	}
+	height := s.config["height"]
+	if height == "" {
+		height = defaultHeight
+	}
 	options := []*protocol.Instruction{
-		protocol.NewInstruction("size", "1024", "768", "96"),
-		protocol.NewInstruction("audio", ""),
-		protocol.NewInstruction("video", ""),
-		protocol.NewInstruction("image", ""),
+		protocol.NewInstruction("size", width, height, "96"),
+		protocol.NewInstruction("audio"),
+		protocol.NewInstruction("video"),
+		protocol.NewInstruction("image", "image/png", "image/jpeg", "image/webp"),
 	}
 
 	err := s.Send(options...)
