@@ -20,8 +20,8 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/tfriedel6/canvas v0.12.1 // indirect
-	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 )
 
 replace github.com/deluan/bring v0.0.0-20191001231550-36da871d66ff => ../
